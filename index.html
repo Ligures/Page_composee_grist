@@ -250,24 +250,39 @@ textarea.ed-input { min-height: 60px; resize: vertical; }
 /* Panneau de configuration */
 #config { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; justify-content: flex-end; z-index: 30; }
 #config[hidden] { display: none; }
-.panel { width: min(560px, 100%); height: 100%; background: var(--carte); overflow: auto; padding: 14px 16px; }
-.panel h3 { margin: 0 0 8px; color: var(--bleu); font-size: 15px; }
-.panel h4 { margin: 14px 0 6px; font-size: 13px; }
+.panel { width: max(50vw, min(560px, 100%)); max-width: 100%; height: 100%; background: var(--fond); display: flex; flex-direction: column; box-shadow: -4px 0 16px rgba(0,0,0,.15); }
+.panel h3 { margin: 0; color: var(--bleu); font-size: 16px; flex: 1; }
 .panel label { display: block; margin: 4px 0; }
-.panel select, .panel input[type=number], .panel input[type=text] { font: inherit; padding: 2px 4px; }
-.pick { border: 1px solid var(--bord); border-radius: 4px; max-height: 220px; overflow: auto; padding: 4px 8px; }
+.panel label[title], .panel .hint[title] { cursor: help; }
+.panel label[title] > .lt { border-bottom: 1px dotted #999; }
+.panel select, .panel input[type=number], .panel input[type=text] { font: inherit; padding: 2px 4px; max-width: 100%; }
+.phead { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--carte); border-bottom: 2px solid var(--bleu); }
+.pfix { padding: 8px 16px 10px; background: var(--carte); border-bottom: 1px solid var(--bord); box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+.pfix .pvt { display: flex; align-items: baseline; gap: 8px; font-weight: 700; font-size: 12px; color: var(--muet); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+.pfix .preview { max-height: 28vh; overflow: auto; }
+.pbody { flex: 1; overflow: auto; padding: 12px 16px 24px; }
+.cs { background: var(--carte); border: 1px solid var(--bord); border-left: 4px solid var(--bleu); border-radius: 6px; padding: 8px 12px 10px; margin-bottom: 14px; }
+.cs > h4 { margin: -8px -12px 8px; padding: 7px 12px; font-size: 13px; color: var(--bleu); background: var(--bleu-hover); border-bottom: 1px solid var(--bord); border-radius: 0 6px 0 0; }
+.cs > h4 small { font-weight: 400; color: var(--muet); }
+.cs.adv { border-left-color: #8D533E; } .cs.adv > h4 { color: #8D533E; background: #fbf5f2; }
+.pick { border: 1px solid var(--bord); border-radius: 4px; max-height: 200px; overflow: auto; padding: 4px 8px; background: var(--carte); }
 .pick label.dis { color: #aaa; }
-.chosen { list-style: none; padding: 0; margin: 0; }
-.chosen li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid #eee; }
-.chosen .ctrls { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--muet); }
+.chosen { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.chosen li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--bord); border-radius: 4px; background: #fcfcff; }
+.chosen li > span { font-weight: 700; }
+.chosen .ctrls { flex-basis: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 2px 14px; font-size: 12px; color: var(--muet); }
+.chosen .ctrls label { margin: 1px 0; }
 .chosen .ctrls select { font-size: 12px; }
+.chosen .fl { flex-basis: 100%; font-size: 11px; color: var(--muet); }
 .preview { display: grid; grid-template-columns: repeat(6, 1fr); grid-auto-rows: 22px; gap: 3px; background: var(--fond); padding: 4px; border-radius: 4px; }
 .preview.dense { grid-auto-flow: row dense; }
 .preview.flux { display: flex; flex-wrap: wrap; }
 .preview div { background: var(--bleu-clair); border: 1px solid #b7b7f5; border-radius: 3px; font-size: 10px; padding: 1px 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pdiag { font-size: 11px; color: var(--muet); }
+@media (max-width: 760px) { .panel { width: 100%; } .pfix .preview { max-height: 20vh; } }
 .chosen li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chosen li small { color: var(--muet); }
-.actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn { border: 1px solid var(--bleu); background: var(--carte); color: var(--bleu); padding: 4px 14px; border-radius: 4px; }
 .btn.primary { background: var(--bleu); color: #fff; }
 #printhead { display: none; }
@@ -410,6 +425,9 @@ async function loadMeta() {
     m.pages = [...m.sectionsByView.keys()].sort((a, b) => a - b).map((vid) => ({ viewId: vid, indent: 0, name: pageName(vid) }));
   }
   m.pageOfView = new Map(m.pages.map((p) => [p.viewId, p.name]));
+  // Tables lisibles par l'utilisateur : une table entièrement interdite n'apparaît pas dans listTables
+  // (et Grist vide son tableId dans les métadonnées)
+  try { m.visibleTables = new Set(await grist.docApi.listTables()); } catch { m.visibleTables = null; }
   m.diag = `Diagnostic — _grist_Pages : ${pages.length} lignes, colonnes [${Object.keys(pages[0] || {}).join(", ")}] · ` +
     `_grist_Views : ${views.length} · widgets : ${sections.length} · pages reliées à des widgets : ` +
     `${m.pages.filter((p) => m.sectionsByView.has(p.viewId)).length}`;
@@ -2316,86 +2334,99 @@ function renderConfig() {
   const preview = draft.blocks.filter((b) => m.sections.has(b.id) && !isSelector(b)).map((b) =>
     (draft.flux && b.newLine ? '<span class="brk"></span>' : "") +
     `<div style="${placement(b, m.sections.get(b.id).parentKey, !!draft.flux)}" title="${esc(secLabel(b.id))}">${esc(getInfo(b.id)?.title || "")}</div>`).join("");
+  // libellé avec explication au survol
+  const L = (text, ctrl, tip, after = false) => `<label${tip ? ` title="${esc(tip)}"` : ""}>${after ? `${ctrl} <span class="lt">${text}</span>` : `<span class="lt">${text}</span> ${ctrl}`}</label>`;
+  const C = (attr, on, text, tip) => L(text, `<input type="checkbox" ${attr} ${on ? "checked" : ""}>`, tip, true);
+  const colOpts = (s) => (m.colsByTable.get(s.tableRef) || []).filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort").map((c) => [c.colId, esc(c.label || c.colId)]);
   const chosen = draft.blocks.map((b, i) => {
     const s = m.sections.get(b.id);
-    if (!s) return `<li><span style="color:var(--rouge)">Vue #${b.id} introuvable (supprimée ?)</span><button class="icon-btn" data-rm="${i}">✕</button></li>`;
+    if (!s) return `<li><span style="color:var(--rouge)">Vue #${b.id} introuvable (supprimée ?)</span><button class="icon-btn" data-rm="${i}" title="Retirer de la page">✕</button></li>`;
     const w = b.width || DEFAULT_WIDTH[s.parentKey] || 3;
     const sel = (f, opts, cur) => `<select data-f="${f}" data-i="${i}">${opts.map(([v, l]) => `<option value="${v}" ${String(v) === String(cur) ? "selected" : ""}>${l}</option>`).join("")}</select>`;
+    const isFiche = ["single", "detail", "record"].includes(s.parentKey), isMap = s.parentKey === "custom" && isMapSection(s);
     return `<li><span title="${esc(secLabel(b.id))}">${esc(secLabel(b.id))} <small>— ${esc(m.pageOfView.get(s.parentId) || "")}</small></span>
-      <button class="icon-btn" data-up="${i}" title="Monter">↑</button><button class="icon-btn" data-down="${i}" title="Descendre">↓</button>
-      <button class="icon-btn" data-rm="${i}" title="Retirer">✕</button>
-      ${["single", "detail", "record"].includes(s.parentKey) ? `<div class="ctrls" style="color:var(--muet)">Champs lus : ${esc(getInfo(b.id).fields.map((f) => f.label + (b.editable ? (isEditableCol(f.col) ? " ✎" : (f.col.isFormula && f.col.formula ? " ƒ" : "")) : "")).join(", ") || "aucun")}${b.editable ? " — ✎ éditable, ƒ formule (non éditable)" : ""}</div>` : ""}
+      <button class="icon-btn" data-up="${i}" title="Placer avant la vue précédente">↑</button><button class="icon-btn" data-down="${i}" title="Placer après la vue suivante">↓</button>
+      <button class="icon-btn" data-rm="${i}" title="Retirer de la page (la vue Grist n'est pas supprimée)">✕</button>
+      ${isFiche ? `<div class="fl">Champs lus : ${esc(getInfo(b.id).fields.map((f) => f.label + (b.editable ? (isEditableCol(f.col) ? " ✎" : (f.col.isFormula && f.col.formula ? " ƒ" : "")) : "")).join(", ") || "aucun")}${b.editable ? " — ✎ éditable, ƒ formule (non éditable)" : ""}</div>` : ""}
       <div class="ctrls">
         ${draft.flux
-          ? `<label>Largeur ${sel("fw", [[0, "ajustée au contenu"], ...widths], b.fw || 0)}</label>`
-          : `<label>Largeur ${sel("width", widths, w)}</label>
-        <label>Colonne ${sel("start", [[0, "auto"], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]], b.start || 0)}</label>
-        <label>Hauteur (lignes) ${sel("rows", [[1, 1], [2, 2], [3, 3]], b.rows || 1)}</label>`}
-        ${s.parentKey === "record" ? `<label>Largeur des colonnes ${sel("colWidths", [["", "ajustées (sans défilement horizontal)"], ["grist", "celles de la vue Grist"], ["auto", "automatique"]], b.colWidths || "")}</label>` : ""}
-        ${s.parentKey === "single" ? `<label><input type="checkbox" data-aslist="${i}" ${b.asList ? "checked" : ""}> Afficher toutes les fiches (en liste)</label>` : ""}
-        ${s.parentKey === "detail" || (s.parentKey === "single" && b.asList) ? `<label>Largeur des fiches ${sel("cardW", [["", "pleine largeur (comme Grist)"], ["s", "étroite (180 px)"], ["m", "moyenne (240 px)"], ["l", "large (340 px)"], ["xl", "très large (460 px)"]], b.cardW || "")}</label>` : ""}
-        <label>Taille ${sel("height", [["", "normale"], ["mini", "mini"], ["compact", "compacte"], ["grand", "grande"], ["tresgrand", "très grande"]], b.height || "")}</label>
-        ${["single", "detail", "record"].includes(s.parentKey) ? `<label title="Les règles d'accès de Grist s'appliquent : une modification interdite est refusée"><input type="checkbox" data-edit="${i}" ${b.editable ? "checked" : ""}> Édition des champs</label>` : ""}
-        ${["single", "detail"].includes(s.parentKey) ? `<label><input type="checkbox" data-sempty="${i}" ${b.showEmpty ? "checked" : ""}> Afficher les champs vides</label>` : ""}
-        <label title="Le bloc reste à l'écran pendant que l'on fait défiler un bloc voisin plus haut"><input type="checkbox" data-stk="${i}" ${b.sticky ? "checked" : ""}> Figer à l'écran</label>
-        <label>À l'ouverture ${sel("startFold", [["", s.parentKey === "chart" || (s.parentKey === "custom" && !isMapSection(s)) ? "auto (replié)" : "auto (déplié)"], ["fold", "replié"], ["open", "déplié"]], b.startFold || "")}</label>
-        <label><input type="checkbox" data-nl="${i}" ${b.newLine ? "checked" : ""}> À la ligne</label>
-        <label><input type="checkbox" data-asel="${i}" ${isSelector(b) ? "checked" : ""}> Liste de sélection</label>
-        ${s.parentKey === "custom" && isMapSection(s) ? `<label>Étiquette ${sel("mapLabel", [["", `auto (${esc(colByKey(m.colsByTable.get(s.tableRef) || [], mapSpec(s).name)?.colId || "aucune")})`], ...(m.colsByTable.get(s.tableRef) || [])
-          .filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort").map((c) => [c.colId, esc(c.label || c.colId)])], b.mapLabel || "")}</label>
-        <label>Couleur selon ${sel("mapColor", [["", "aucune"], ...(m.colsByTable.get(s.tableRef) || [])
-          .filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort").map((c) => [c.colId, esc(c.label || c.colId)])], b.mapColor || "")}</label>
-        <label><input type="checkbox" data-mcom="${i}" ${b.mapCommunes ? "checked" : ""}> Tracer les communes</label>
-        ${b.mapCommunes ? `<label>Code INSEE ${sel("mapCommune", [["", "auto"], ...(m.colsByTable.get(s.tableRef) || [])
-          .filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort").map((c) => [c.colId, esc(c.label || c.colId)])], b.mapCommune || "")}</label>` : ""}
-        <label><input type="checkbox" data-mlbl="${i}" ${b.mapLabelsOn ? "checked" : ""}> Étiquettes toujours visibles</label>` : ""}
-        ${isSelector(b) ? `<label>Colonne affichée ${sel("selCol", [["", "auto"], ...(m.colsByTable.get(s.tableRef) || [])
-          .filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort").map((c) => [c.colId, esc(c.label || c.colId)])], b.selCol || "")}</label>
-        <label>Ordre ${sel("selOrder", [["", "alphabétique"], ["vue", "celui de la vue Grist"]], b.selOrder || "")}</label>
-        <label>Regrouper par ${sel("selGroup", [["", "aucun"], ...(m.colsByTable.get(s.tableRef) || [])
-          .filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort").map((c) => [c.colId, esc(c.label || c.colId)])], b.selGroup || "")}</label>
-        <label>ID de synchronisation <input type="text" data-sync="${i}" value="${esc(b.syncId ?? "")}" placeholder="${esc(selectorSyncId({ id: b.id }) || "aucun")}" style="width:110px"></label>` : ""}
+          ? L("Largeur", sel("fw", [[0, "ajustée au contenu"], ...widths], b.fw || 0), "Mode ultracompact : largeur du bloc. « Ajustée au contenu » prend juste la place nécessaire aux données.")
+          : L("Largeur", sel("width", widths, w), "Part de la largeur de la page occupée par le bloc (grille de 6 colonnes).")
+          + L("Colonne", sel("start", [[0, "auto"], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]], b.start || 0), "Colonne de départ du bloc dans la grille. « auto » : le bloc se place à la suite du précédent.")
+          + L("Hauteur (lignes)", sel("rows", [[1, 1], [2, 2], [3, 3]], b.rows || 1), "Nombre de rangées de la grille occupées par le bloc, pour placer plusieurs petits blocs à côté d'un grand. Ignoré en mode empilé.")}
+        ${s.parentKey === "record" ? L("Largeur des colonnes", sel("colWidths", [["", "ajustées (sans défilement horizontal)"], ["grist", "celles de la vue Grist"], ["auto", "automatique"]], b.colWidths || ""), "Ajustées : les colonnes se partagent la largeur du bloc, sans ascenseur horizontal. Grist : largeurs réglées dans la vue native. Automatique : selon le contenu.") : ""}
+        ${s.parentKey === "single" ? C(`data-aslist="${i}"`, b.asList, "Afficher toutes les fiches (en liste)", "Affiche une fiche par enregistrement au lieu de la seule fiche sélectionnée.") : ""}
+        ${s.parentKey === "detail" || (s.parentKey === "single" && b.asList) ? L("Largeur des fiches", sel("cardW", [["", "pleine largeur (comme Grist)"], ["s", "étroite (180 px)"], ["m", "moyenne (240 px)"], ["l", "large (340 px)"], ["xl", "très large (460 px)"]], b.cardW || ""), "Largeur de chaque fiche : plusieurs fiches étroites se placent côte à côte.") : ""}
+        ${L("Taille", sel("height", [["", "normale"], ["mini", "mini"], ["compact", "compacte"], ["grand", "grande"], ["tresgrand", "très grande"]], b.height || ""), "Hauteur maximale du bloc (tableaux, graphiques, cartes). Au-delà, le contenu défile dans le bloc.")}
+        ${isFiche ? C(`data-edit="${i}"`, b.editable, "Édition des champs", "Permet de modifier les valeurs directement dans la page (double-clic). Les règles d'accès de Grist s'appliquent : une modification interdite est refusée ; les lecteurs restent en lecture seule.") : ""}
+        ${["single", "detail"].includes(s.parentKey) ? C(`data-sempty="${i}"`, b.showEmpty, "Afficher les champs vides", "Pour ce bloc seulement, montre aussi les champs sans valeur (sinon masqués selon l'option générale).") : ""}
+        ${C(`data-stk="${i}"`, b.sticky, "Figer à l'écran", "Le bloc reste visible pendant que l'on fait défiler un bloc voisin plus long.")}
+        ${L("À l'ouverture", sel("startFold", [["", s.parentKey === "chart" || (s.parentKey === "custom" && !isMap) ? "auto (replié)" : "auto (déplié)"], ["fold", "replié"], ["open", "déplié"]], b.startFold || ""), "État du bloc à l'ouverture de la page. Un bloc replié n'affiche que son titre ; un clic sur le titre le déplie.")}
+        ${C(`data-nl="${i}"`, b.newLine, "À la ligne", "Le bloc commence une nouvelle rangée, même s'il reste de la place à droite du bloc précédent.")}
+        ${C(`data-asel="${i}"`, isSelector(b), "Liste de sélection", "Affiche cette vue sous forme de liste déroulante dans l'en-tête : choisir une valeur pilote les blocs liés, comme un sélecteur.")}
+        ${isMap ? L("Étiquette", sel("mapLabel", [["", `auto (${esc(colByKey(m.colsByTable.get(s.tableRef) || [], mapSpec(s).name)?.colId || "aucune")})`], ...colOpts(s)], b.mapLabel || ""), "Colonne affichée au survol ou au clic sur un point. « auto » reprend la colonne « Name » de la carte Grist.")
+          + L("Couleur selon", sel("mapColor", [["", "aucune"], ...colOpts(s)], b.mapColor || ""), "Colore les points selon la valeur d'une colonne (une couleur par valeur, ou des classes pour un nombre). Les valeurs invalides sont en rouge.")
+          + C(`data-mcom="${i}"`, b.mapCommunes, "Tracer les communes", "Dessine le contour des communes contenant des points (geo.api.gouv.fr), dans la couleur majoritaire de leurs points.")
+          + (b.mapCommunes ? L("Code INSEE", sel("mapCommune", [["", "auto"], ...colOpts(s)], b.mapCommune || ""), "Colonne donnant le code INSEE de la commune (ou une référence vers la table des communes).") : "")
+          + C(`data-mlbl="${i}"`, b.mapLabelsOn, "Étiquettes toujours visibles", "Affiche l'étiquette de chaque point en permanence, au lieu de la montrer au survol.") : ""}
+        ${isSelector(b) ? L("Colonne affichée", sel("selCol", [["", "auto"], ...colOpts(s)], b.selCol || ""), "Colonne dont les valeurs apparaissent dans la liste déroulante.")
+          + L("Ordre", sel("selOrder", [["", "alphabétique"], ["vue", "celui de la vue Grist"]], b.selOrder || ""), "Ordre des valeurs dans la liste.")
+          + L("Regrouper par", sel("selGroup", [["", "aucun"], ...colOpts(s)], b.selGroup || ""), "Classe les valeurs de la liste sous des intertitres (par exemple les écoles par commune).")
+          + L("ID de synchronisation", `<input type="text" data-sync="${i}" value="${esc(b.syncId ?? "")}" placeholder="${esc(selectorSyncId({ id: b.id }) || "aucun")}" style="width:110px">`, "Les listes portant le même identifiant gardent la même sélection d'une page à l'autre (comme le drop-down de Varamil).") : ""}
       </div></li>`;
   }).join("") || '<li class="msg">Aucune vue retenue</li>';
 
+  const body = $(".pbody"), keep = body ? body.scrollTop : 0;   // la zone défilante est recréée : on garde sa position
   $("#panel").innerHTML = `
-    <h3>Composer la page</h3>
-    <label>Nom de la configuration <input type="text" id="cName" value="${esc(draft.name || "Page composée")}" style="width:60%"></label>
-    ${(S.stored || []).length ? `<label>Reprendre une configuration enregistrée
-      <select id="cStored">${S.stored.map((x) => `<option value="${x.id}" ${x.name === draft.name ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>
-      <button class="icon-btn" id="cLoad">Charger</button></label>` : ""}
-    <label>Titre affiché <input type="text" id="cTitle" value="${esc(draft.title)}" placeholder="(aucun)" style="width:100%"></label>
-    <h4>1. Vues disponibles</h4>
-    <label>Page <select id="cPage">${pageOpts}</select></label>
-    <div class="pick">${picks}</div>
-    <h4>2. Vues retenues (ordre d'affichage)</h4>
-    <ul class="chosen">${chosen}</ul>
-    <h4>Aperçu de la disposition</h4>
-    <div class="preview ${draft.flux ? "flux" : draft.dense !== false ? "dense" : ""}">${preview}</div>
-    <label><input type="checkbox" id="cFlux" ${draft.flux ? "checked" : ""}> Mode ultracompact : blocs ajustés à la largeur de leurs données</label>
-    ${draft.flux ? "" : `<label><input type="checkbox" id="cDense" ${draft.dense !== false ? "checked" : ""}> Combler automatiquement les espaces libres</label>
-    <label><input type="checkbox" id="cMasonry" ${draft.masonry ? "checked" : ""}> Empiler les blocs sans trous (chaque colonne indépendante ; « Hauteur (lignes) » ignorée)</label>`}
-    <h4>Navigation entre pages <small style="font-weight:400;color:var(--muet)">(menu commun à toutes les pages composées)</small></h4>
-    <label>Adresse du document <input type="text" id="cMnUrl" value="${esc(draftNav.url)}" placeholder="https://…/o/organisation/document" style="width:100%"></label>
-    <label><input type="checkbox" id="cMnInWidget" ${draftNav.inWidget ? "checked" : ""}> Changer de page dans le widget (instantané, sans recharger Grist ; clic du milieu = vraie page Grist)</label>
-    <label><input type="checkbox" id="cMnSingle" ${draftNav.singlePage ? "checked" : ""}> Ouvrir les pages en mode page unique (<code>?style=singlePage</code>, sans menus Grist)</label>
-    <div>${draftNav.items.map((x, i) => `<div class="mn">
-      <input type="text" data-mnlabel="${i}" value="${esc(x.label || "")}" placeholder="Libellé" style="width:120px">
-      <select data-mnview="${i}">${m.pages.map((pg) => `<option value="${pg.viewId}" ${pg.viewId === x.viewId ? "selected" : ""}>${esc(pg.name)}</option>`).join("")}</select>
-      <select data-mncfg="${i}" title="Configuration affichée sur cette page (sert à surligner la page courante)"><option value="">— config —</option>${(S.stored || []).map((c) =>
-        `<option value="${esc(c.name)}" ${c.name === x.cfg ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
-      ${m.pages.some((pg) => pg.viewId === x.viewId) ? "" : `<span style="color:var(--rouge)">page introuvable (n°${x.viewId})</span>`}
-      <small style="color:var(--muet)">p/${x.viewId}</small>
-      <button class="icon-btn" data-mnup="${i}">↑</button><button class="icon-btn" data-mndown="${i}">↓</button><button class="icon-btn" data-mnrm="${i}">✕</button>
-    </div>`).join("")}</div>
-    <button class="icon-btn" id="cMnAdd" style="margin-top:6px">+ Ajouter une page au menu</button>
-    <h4>3. Options</h4>
-    <label><input type="checkbox" id="cHideFields" ${draft.hideEmptyFields ? "checked" : ""}> Masquer les champs vides dans les fiches</label>
-    <label><input type="checkbox" id="cHideBlocks" ${draft.hideEmptyBlocks ? "checked" : ""}> Masquer les blocs sans données</label>
-    <label>Hauteur des graphiques (px) <input type="number" id="cChartH" min="100" step="20" value="${draft.chartHeight || 260}" style="width:80px"></label>
-    <label>Hauteur maximale des tableaux (px) <input type="number" id="cMaxH" min="120" step="20" value="${draft.tableMaxHeight}" style="width:80px"></label>
-    <p style="font-size:11px;color:var(--muet);margin-top:14px">${esc(m.diag || "")}</p>
-    <div class="actions"><button class="btn" id="cCancel">Annuler</button><button class="btn primary" id="cSave">Enregistrer</button></div>`;
+    <div class="phead"><h3>Composer la page</h3>
+      <div class="actions"><button class="btn" id="cCancel" title="Fermer sans rien modifier">Annuler</button><button class="btn primary" id="cSave" title="Appliquer et enregistrer la configuration dans ${CFG_TABLE}">Enregistrer</button></div></div>
+    <div class="pfix">
+      <div class="pvt">Aperçu de la disposition <span class="hint" title="Aperçu schématique : chaque rectangle est un bloc, à sa largeur et à sa place. Les listes de sélection, affichées dans l'en-tête, n'y figurent pas." style="text-transform:none;font-weight:400">ⓘ</span></div>
+      <div class="preview ${draft.flux ? "flux" : draft.dense !== false ? "dense" : ""}">${preview || '<span class="pdiag">Aucun bloc</span>'}</div>
+    </div>
+    <div class="pbody">
+    <section class="cs"><h4>Général</h4>
+      ${L("Nom de la configuration", `<input type="text" id="cName" value="${esc(draft.name || "Page composée")}" style="width:60%">`, "Nom sous lequel la configuration est enregistrée dans la table " + CFG_TABLE + ". Deux pages qui portent le même nom partagent la même configuration.")}
+      ${(S.stored || []).length ? L("Reprendre une configuration enregistrée", `<select id="cStored">${S.stored.map((x) => `<option value="${x.id}" ${x.name === draft.name ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>
+        <button class="icon-btn" id="cLoad" title="Remplace le brouillon par la configuration choisie (rien n'est enregistré avant « Enregistrer »)">Charger</button>`, "Repartir d'une configuration existante, par exemple pour la dupliquer sous un autre nom.") : ""}
+      ${L("Titre affiché", `<input type="text" id="cTitle" value="${esc(draft.title)}" placeholder="(aucun)" style="width:100%">`, "Titre en haut de la page et des impressions. Vide : pas de titre, ce qui laisse plus de place.")}
+    </section>
+    <section class="cs"><h4>1. Vues disponibles <small>— cocher les vues Grist à afficher</small></h4>
+      ${L("Page", `<select id="cPage">${pageOpts}</select>`, "Page Grist dont on liste les vues. On peut combiner des vues de plusieurs pages.")}
+      <div class="pick">${picks}</div>
+    </section>
+    <section class="cs"><h4>2. Vues retenues <small>— dans l'ordre d'affichage</small></h4>
+      <ul class="chosen">${chosen}</ul>
+    </section>
+    <section class="cs"><h4>3. Disposition</h4>
+      ${C('id="cFlux"', draft.flux, "Mode ultracompact", "Les blocs prennent la largeur de leurs données et s'enchaînent comme des mots dans un texte, au lieu d'une grille de 6 colonnes.")}
+      ${draft.flux ? "" : C('id="cDense"', draft.dense !== false, "Combler automatiquement les espaces libres", "Un bloc plus petit peut remonter dans un trou laissé plus haut, quitte à changer l'ordre d'affichage.")
+        + C('id="cMasonry"', draft.masonry, "Empiler les blocs sans trous", "Chaque colonne s'empile indépendamment, comme un mur de briques : plus de place perdue sous les blocs courts. L'option « Hauteur (lignes) » est alors ignorée.")}
+    </section>
+    <section class="cs"><h4>4. Affichage</h4>
+      ${C('id="cHideFields"', draft.hideEmptyFields, "Masquer les champs vides dans les fiches", "Les champs sans valeur ne sont pas affichés dans les fiches (sauf en édition, ou si le bloc demande à les afficher).")}
+      ${C('id="cHideBlocks"', draft.hideEmptyBlocks, "Masquer les blocs sans données", "Un bloc sans aucune ligne à afficher (par exemple après filtrage) disparaît de la page.")}
+      ${L("Hauteur des graphiques (px)", `<input type="number" id="cChartH" min="100" step="20" value="${draft.chartHeight || 260}" style="width:80px">`, "Hauteur par défaut des graphiques d'une ligne.")}
+      ${L("Hauteur maximale des tableaux (px)", `<input type="number" id="cMaxH" min="120" step="20" value="${draft.tableMaxHeight}" style="width:80px">`, "Au-delà, le tableau défile à l'intérieur de son bloc (en-têtes fixes).")}
+    </section>
+    <section class="cs adv"><h4>5. Navigation entre pages <small>— menu commun à toutes les pages composées</small></h4>
+      ${L("Adresse du document", `<input type="text" id="cMnUrl" value="${esc(draftNav.url)}" placeholder="https://…/o/organisation/document" style="width:100%">`, "Adresse de base du document Grist (https uniquement), utilisée pour construire les liens vers les pages.")}
+      ${C('id="cMnInWidget"', draftNav.inWidget, "Changer de page dans le widget", "Instantané, sans recharger Grist : le widget affiche la configuration de la page choisie. Clic du milieu : ouvre la vraie page Grist.")}
+      ${C('id="cMnSingle"', draftNav.singlePage, "Ouvrir les pages en mode page unique", "Ajoute ?style=singlePage aux liens : la page s'ouvre sans les menus de Grist.")}
+      <div>${draftNav.items.map((x, i) => `<div class="mn">
+        <input type="text" data-mnlabel="${i}" value="${esc(x.label || "")}" placeholder="Libellé" title="Texte du lien dans le menu (vide : nom de la page)" style="width:120px">
+        <select data-mnview="${i}" title="Page Grist ouverte par ce lien">${m.pages.map((pg) => `<option value="${pg.viewId}" ${pg.viewId === x.viewId ? "selected" : ""}>${esc(pg.name)}</option>`).join("")}</select>
+        <select data-mncfg="${i}" title="Configuration affichée sur cette page (sert à surligner la page courante et au changement de page dans le widget)"><option value="">— config —</option>${(S.stored || []).map((c) =>
+          `<option value="${esc(c.name)}" ${c.name === x.cfg ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
+        ${m.pages.some((pg) => pg.viewId === x.viewId) ? "" : `<span style="color:var(--rouge)">page introuvable (n°${x.viewId})</span>`}
+        <small style="color:var(--muet)">p/${x.viewId}</small>
+        <button class="icon-btn" data-mnup="${i}" title="Monter">↑</button><button class="icon-btn" data-mndown="${i}" title="Descendre">↓</button><button class="icon-btn" data-mnrm="${i}" title="Retirer du menu">✕</button>
+      </div>`).join("")}</div>
+      <button class="icon-btn" id="cMnAdd" style="margin-top:6px" title="Les pages dont l'utilisateur ne peut lire aucune table sont masquées automatiquement">+ Ajouter une page au menu</button>
+    </section>
+    <p class="pdiag">${esc(m.diag || "")}</p>
+    </div>`;
+  if (keep) $(".pbody").scrollTop = keep;
 }
 $("#panel").addEventListener("change", (ev) => {
   const t = ev.target;
@@ -2525,10 +2556,21 @@ $("#pnav").addEventListener("click", (ev) => {
   ev.preventDefault();
   switchConfig(a.dataset.gocfg);
 });
+/* Une page du menu n'est proposée que si l'utilisateur peut lire au moins une table de ses vues (comme Grist) */
+function viewReadable(vid) {
+  const m = S.meta;
+  if (!m) return true;
+  const secs = m.sectionsByView.get(vid) || [];
+  if (!secs.length) return true;
+  return secs.some((s) => {
+    const t = m.tables.get(s.tableRef), id = t?.tableId;
+    return !!id && (!m.visibleTables || m.visibleTables.has(id));
+  });
+}
 function renderNav() {
   const nav = $("#pnav"), n = S.nav || { items: [] };
   if (!n.items.length || (!n.url && !n.inWidget)) { nav.replaceChildren(); return; }
-  nav.innerHTML = n.items.filter((x) => x.viewId).map((x) =>
+  nav.innerHTML = n.items.filter((x) => x.viewId && viewReadable(x.viewId)).map((x) =>
     `<a href="${safeBase(n.url) ? esc(pageUrl(safeBase(n.url), x.viewId, n.singlePage)) : "#"}" title="${safeBase(n.url) ? esc(pageUrl(safeBase(n.url), x.viewId, n.singlePage)) : ""}" target="_top"${n.inWidget && x.cfg ? ` data-gocfg="${esc(x.cfg)}"` : ""} class="${x.cfg && x.cfg === S.cfg.name ? "cur" : ""}">${esc(x.label || S.meta?.pageOfView.get(x.viewId) || "Page")}</a>`).join("");
 }
 async function readStoredConfigs() {
