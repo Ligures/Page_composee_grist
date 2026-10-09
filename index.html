@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GriSco – Page composée</title>
 <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG" crossorigin="anonymous"></script>
 <style>
 @font-face { font-family: "Marianne"; font-weight: 400; font-display: swap;
   src: url("https://cdn.jsdelivr.net/gh/betagouv/beta.gouv.fr@master/assets/fonts/Marianne-Regular.woff") format("woff"); }
@@ -1390,19 +1390,37 @@ function renderChart(info, rows, body, jobs) {
 
 /* ---------- Graphique avancé (widget Plotly de Grist) ---------- */
 /* ---------- Carte (widget « Map » de Grist, Leaflet) ---------- */
-let leafletP = null;
-function loadLeaflet() {
-  return leafletP ??= new Promise((res, rej) => {
-    if (window.L) return res();
-    const css = document.createElement("link");
-    css.rel = "stylesheet"; css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
-    document.head.append(css);
-    const sc = document.createElement("script");
-    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
-    sc.onload = res; sc.onerror = () => { leafletP = null; rej(new Error("Leaflet n'a pas pu être chargé")); };
-    document.head.append(sc);
+/* Bibliothèques chargées à la demande : versions figées + empreinte d'intégrité (SRI).
+   Si le fichier servi par le CDN a été modifié, le navigateur refuse de l'exécuter. */
+const LIBS = {
+  leafletCss: ["https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css", "sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"],
+  leaflet:    ["https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js", "sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"],
+  plotly:     ["https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js", "sha384-cCVCZkAjYNxaYKbM8lsArLznDF/SvMFr1jcZrvOpSTCa0W40ZAdLzHCEulnUa5i7"],
+  purify:     ["https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js", "sha384-JEyTNhjM6R1ElGoJns4U2Ln4ofPcqzSsynQkmEc/KGy6336qAZl70tDLufbkla+3"],
+};
+function loadLib([src, integrity], name, css = false) {
+  return new Promise((res, rej) => {
+    const el = document.createElement(css ? "link" : "script");
+    if (css) { el.rel = "stylesheet"; el.href = src; } else el.src = src;
+    el.integrity = integrity; el.crossOrigin = "anonymous";
+    el.onload = res; el.onerror = () => { el.remove(); rej(new Error(`${name} n'a pas pu être chargé`)); };
+    document.head.append(el);
   });
 }
+let leafletP = null;
+function loadLeaflet() {
+  return leafletP ??= (window.L ? Promise.resolve() : Promise.all([loadLib(LIBS.leafletCss, "Leaflet (styles)", true).catch(() => {}), loadLib(LIBS.leaflet, "Leaflet")]))
+    .catch((e) => { leafletP = null; throw e; });
+}
+/* Nettoyage du HTML des étiquettes (DOMPurify) : mise en forme conservée, scripts et gestionnaires retirés.
+   Sans DOMPurify, on n'affiche que le texte (DOMParser n'exécute rien). */
+let purifyP = null;
+const loadPurify = () => (purifyP ??= (window.DOMPurify ? Promise.resolve() : loadLib(LIBS.purify, "DOMPurify")).catch(() => {}));
+function safeHtml(html) {
+  if (window.DOMPurify) return DOMPurify.sanitize(String(html), { FORBID_TAGS: ["style", "form", "input", "button", "iframe", "object", "embed"], FORBID_ATTR: ["srcset"] });
+  return esc(new DOMParser().parseFromString(String(html), "text/html").body.textContent || "");
+}
+const looksHtml = (t) => /<[a-z][\s\S]*>/i.test(String(t || ""));
 function mapSpec(sec) {
   const cv = parseJSON(parseJSON(sec.options).customView, null);
   if (!cv) return null;
@@ -1528,7 +1546,7 @@ async function drawCommunes(map, pts, comC, keepView) {
     const layer = L.geoJSON({ type: "FeatureCollection", features: feats }, {
       pane: "communes",
       style: (f) => { const c = fillOf(String(f.properties.code).toUpperCase()); return { color: c, weight: 1.5, opacity: 0.9, fillColor: c, fillOpacity: 0.18 }; },
-      onEachFeature: (f, l) => l.bindTooltip(`${f.properties.nom} (${byCode.get(String(f.properties.code).toUpperCase()).length})`, { sticky: true }),
+      onEachFeature: (f, l) => l.bindTooltip(`${esc(f.properties.nom)} (${byCode.get(String(f.properties.code).toUpperCase()).length})`, { sticky: true }),
     }).addTo(map);
     if (!keepView && feats.length) map.fitBounds(layer.getBounds(), { padding: [12, 12], animate: false });
     if (feats.length < byCode.size) note(`Communes : ${byCode.size - feats.length} code(s) INSEE sans contour`);
@@ -1560,7 +1578,7 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
   const key = pts.map((p) => p.id).join(",");
   jobs.push(async () => {
     try {
-    await loadLeaflet();
+    await Promise.all([loadLeaflet(), pts.some((p) => looksHtml(p.name)) ? loadPurify() : null]);
     const map = L.map(el, { zoomControl: true, attributionControl: true }).setView([pts[0].lat, pts[0].lng], 11);   // vue initiale sûre
     S.maps.push(map);
     L.tileLayer(spec.tiles, { attribution: spec.attribution, maxZoom: 19 }).addTo(map);
@@ -1572,8 +1590,9 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
     for (const p of pts) {
       p.fill = legend ? legend.colorOf(p.cv) : null;
       const m = L.circleMarker([p.lat, p.lng], style(p.id === selId, p.fill)).addTo(map);
-      if (p.name && /<[a-z][\s\S]*>/i.test(p.name) && !b.mapLabelsOn) m.bindPopup(p.name, { maxWidth: 420 });   // étiquette HTML : popup au clic, comme la carte native
-      else if (p.name) m.bindTooltip(p.name, { direction: "top", offset: [0, -6], permanent: !!b.mapLabelsOn, className: b.mapLabelsOn ? "lbl" : "" });
+      // Leaflet interprète les étiquettes comme du HTML : HTML nettoyé (popup au clic, comme la carte native), sinon texte échappé
+      if (p.name && looksHtml(p.name) && !b.mapLabelsOn) m.bindPopup(safeHtml(p.name), { maxWidth: 420 });
+      else if (p.name) m.bindTooltip(looksHtml(p.name) ? safeHtml(p.name) : esc(p.name), { direction: "top", offset: [0, -6], permanent: !!b.mapLabelsOn, className: b.mapLabelsOn ? "lbl" : "" });
       m.on("click", () => {
         S.sel[info.secId] = p.id;
         if (hasRenderedDependents(info.secId)) scheduleRender();
@@ -1606,13 +1625,7 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
 
 let plotlyP = null;
 function loadPlotly() {
-  return plotlyP ??= new Promise((res, rej) => {
-    if (window.Plotly) return res();
-    const sc = document.createElement("script");
-    sc.src = "https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js";
-    sc.onload = res; sc.onerror = () => { plotlyP = null; rej(new Error("Plotly n'a pas pu être chargé")); };
-    document.head.append(sc);
-  });
+  return plotlyP ??= (window.Plotly ? Promise.resolve() : loadLib(LIBS.plotly, "Plotly")).catch((e) => { plotlyP = null; throw e; });
 }
 /* ---------- Listes de sélection intégrées ---------- */
 function isSelector(b) {
@@ -2200,7 +2213,8 @@ async function exportCsv(b, name) {
   const aoa = sheetFor(await blockData(b));
   const cell = (v) => {
     const t = v instanceof Date ? v.toLocaleDateString("fr-FR", { timeZone: "UTC" }) : typeof v === "number" ? String(v).replace(".", ",") : String(v ?? "");
-    return /[;"\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+    const u = typeof v === "string" && /^[=+\-@\t\r]/.test(t) ? "'" + t : t;   // texte pris pour une formule par Excel : neutralisé
+    return /[;"\n\r]/.test(u) ? `"${u.replace(/"/g, '""')}"` : u;
   };
   const csv = "﻿" + aoa.map((r) => r.map(cell).join(";")).join("\r\n");   // séparateur « ; » et BOM : ouverture directe dans Excel en français
   const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })), download: `${name}.csv` });
@@ -2473,6 +2487,7 @@ async function guessDocUrl() {   // adresse proposée par défaut : hôte + iden
     return m ? `${m[1]}/doc/${m[2]}` : "";
   } catch { return ""; }
 }
+const safeBase = (u) => (/^https:\/\/[^\s"'<>\\]+$/i.test(String(u || "").trim()) ? String(u).trim() : "");   // https uniquement (pas de javascript:, data:…)
 const pageUrl = (base, viewId, single) => `${String(base).trim().replace(/\/p\/\d+.*$/, "").replace(/[?#].*$/, "").replace(/\/+$/, "")}/p/${viewId}${single ? "?style=singlePage" : ""}`;
 /* Sections nécessaires à une configuration : ses blocs + toute leur chaîne de liaisons */
 function sectionsOf(cfg) {
@@ -2514,7 +2529,7 @@ function renderNav() {
   const nav = $("#pnav"), n = S.nav || { items: [] };
   if (!n.items.length || (!n.url && !n.inWidget)) { nav.replaceChildren(); return; }
   nav.innerHTML = n.items.filter((x) => x.viewId).map((x) =>
-    `<a href="${n.url ? esc(pageUrl(n.url, x.viewId, n.singlePage)) : "#"}" title="${n.url ? esc(pageUrl(n.url, x.viewId, n.singlePage)) : ""}" target="_top"${n.inWidget && x.cfg ? ` data-gocfg="${esc(x.cfg)}"` : ""} class="${x.cfg && x.cfg === S.cfg.name ? "cur" : ""}">${esc(x.label || S.meta?.pageOfView.get(x.viewId) || "Page")}</a>`).join("");
+    `<a href="${safeBase(n.url) ? esc(pageUrl(safeBase(n.url), x.viewId, n.singlePage)) : "#"}" title="${safeBase(n.url) ? esc(pageUrl(safeBase(n.url), x.viewId, n.singlePage)) : ""}" target="_top"${n.inWidget && x.cfg ? ` data-gocfg="${esc(x.cfg)}"` : ""} class="${x.cfg && x.cfg === S.cfg.name ? "cur" : ""}">${esc(x.label || S.meta?.pageOfView.get(x.viewId) || "Page")}</a>`).join("");
 }
 async function readStoredConfigs() {
   try {
