@@ -2418,6 +2418,8 @@ function renderConfig() {
         <select data-mnview="${i}" title="Page Grist ouverte par ce lien">${m.pages.map((pg) => `<option value="${pg.viewId}" ${pg.viewId === x.viewId ? "selected" : ""}>${esc(pg.name)}</option>`).join("")}</select>
         <select data-mncfg="${i}" title="Configuration affichée sur cette page (sert à surligner la page courante et au changement de page dans le widget)"><option value="">— config —</option>${(S.stored || []).map((c) =>
           `<option value="${esc(c.name)}" ${c.name === x.cfg ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select>
+        <select data-mnneed="${i}" title="Afficher ce lien seulement aux utilisateurs qui voient au moins une ligne de cette table (règles d'accès). « tous » : le lien est masqué seulement si aucune table de la page n'est lisible."><option value="">visible : tous</option>${[...m.tables.values()].filter((t) => t.tableId && !t.tableId.startsWith("_grist") && !t.summarySourceTable).map((t) =>
+          `<option value="${esc(t.tableId)}" ${t.tableId === x.needTable ? "selected" : ""}>si accès à ${esc(t.tableId)}</option>`).join("")}</select>
         ${m.pages.some((pg) => pg.viewId === x.viewId) ? "" : `<span style="color:var(--rouge)">page introuvable (n°${x.viewId})</span>`}
         <small style="color:var(--muet)">p/${x.viewId}</small>
         <button class="icon-btn" data-mnup="${i}" title="Monter">↑</button><button class="icon-btn" data-mndown="${i}" title="Descendre">↓</button><button class="icon-btn" data-mnrm="${i}" title="Retirer du menu">✕</button>
@@ -2445,6 +2447,7 @@ $("#panel").addEventListener("change", (ev) => {
   if (t.dataset.mnlabel) { draftNav.items[Number(t.dataset.mnlabel)].label = t.value; return; }
   if (t.dataset.mnview) { draftNav.items[Number(t.dataset.mnview)].viewId = Number(t.value); return; }
   if (t.dataset.mncfg) { draftNav.items[Number(t.dataset.mncfg)].cfg = t.value; return; }
+  if (t.dataset.mnneed) { draftNav.items[Number(t.dataset.mnneed)].needTable = t.value; return; }
   if (t.dataset.edit) { draft.blocks[Number(t.dataset.edit)].editable = t.checked; return; }
   if (t.dataset.stk) { draft.blocks[Number(t.dataset.stk)].sticky = t.checked; return; }
   if (t.dataset.aslist) { draft.blocks[Number(t.dataset.aslist)].asList = t.checked; renderConfig(); return; }
@@ -2491,7 +2494,7 @@ $("#panel").addEventListener("click", async (ev) => {
     catch (e) { status(`Configuration appliquée mais non enregistrée dans ${CFG_TABLE} : ${e.message || e}`, true); }
     draftNav.url = $("#cMnUrl")?.value.trim() ?? draftNav.url;
     if (JSON.stringify(draftNav) !== JSON.stringify(S.nav)) {
-      S.nav = draftNav;
+      S.nav = draftNav; S.navAccess = {};
       try { await saveConfigToTable({ name: NAV_NAME, nav: draftNav }); } catch { /* droits insuffisants */ }
     }
     scheduleRender();
@@ -2567,10 +2570,19 @@ function viewReadable(vid) {
     return !!id && (!m.visibleTables || m.visibleTables.has(id));
   });
 }
+S.navAccess = {};
 function renderNav() {
   const nav = $("#pnav"), n = S.nav || { items: [] };
   if (!n.items.length || (!n.url && !n.inWidget)) { nav.replaceChildren(); return; }
-  nav.innerHTML = n.items.filter((x) => x.viewId && viewReadable(x.viewId)).map((x) =>
+  // condition explicite : la page n'apparaît que si l'utilisateur voit au moins une ligne de la table choisie
+  // (couvre les règles d'accès par ligne, qui laissent la table visible mais vide)
+  const need = [...new Set(n.items.map((x) => x.needTable).filter((t) => t && !(t in S.navAccess)))];
+  if (need.length) {
+    for (const t of need) S.navAccess[t] = false;
+    Promise.all(need.map((t) => grist.docApi.fetchTable(t).then((d) => { S.navAccess[t] = (d.id || []).length > 0; }).catch(() => { S.navAccess[t] = false; })))
+      .then(() => renderNav());
+  }
+  nav.innerHTML = n.items.filter((x) => x.viewId && viewReadable(x.viewId) && (!x.needTable || S.navAccess[x.needTable])).map((x) =>
     `<a href="${safeBase(n.url) ? esc(pageUrl(safeBase(n.url), x.viewId, n.singlePage)) : "#"}" title="${safeBase(n.url) ? esc(pageUrl(safeBase(n.url), x.viewId, n.singlePage)) : ""}" target="_top"${n.inWidget && x.cfg ? ` data-gocfg="${esc(x.cfg)}"` : ""} class="${x.cfg && x.cfg === S.cfg.name ? "cur" : ""}">${esc(x.label || S.meta?.pageOfView.get(x.viewId) || "Page")}</a>`).join("");
 }
 async function readStoredConfigs() {
