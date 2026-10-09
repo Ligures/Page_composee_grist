@@ -278,6 +278,9 @@ textarea.ed-input { min-height: 60px; resize: vertical; }
 .preview.dense { grid-auto-flow: row dense; }
 .preview.flux { display: flex; flex-wrap: wrap; }
 .preview div { background: var(--bleu-clair); border: 1px solid #b7b7f5; border-radius: 3px; font-size: 10px; padding: 1px 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mrules { grid-column: 1 / -1; border: 1px dashed var(--bord); border-radius: 4px; padding: 4px 8px; margin: 2px 0; cursor: help; }
+.mrules .mr { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 3px 0; cursor: default; }
+.mrules input[type=color] { width: 32px; height: 22px; padding: 0; border: 1px solid var(--bord); background: none; cursor: pointer; }
 .pdiag { font-size: 11px; color: var(--muet); }
 @media (max-width: 760px) { .panel { width: 100%; } .pfix .preview { max-height: 20vh; } }
 .chosen li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1510,6 +1513,33 @@ function distinctColor(i) {
   if (h < 15 || h > 345) h = (h + 30) % 360;   // on évite le rouge des valeurs invalides
   return `hsl(${Math.round(h)}, ${k % 2 ? 55 : 70}%, ${[38, 52, 64][k % 3]}%)`;
 }
+/* Couleurs choisies (3 règles au plus) : la première règle vérifiée donne la couleur, sinon « Autres » */
+const RULE_OPS = [["=", "="], ["!=", "≠"], ["<", "<"], ["<=", "≤"], [">", ">"], [">=", "≥"], ["~", "contient"]];
+function ruleTest(r, col, opts, v) {
+  const txt = String(textOf(col, opts, v) ?? "").trim(), want = String(r.v ?? "").trim();
+  const n = typeof v === "number" ? v : toNum(txt), w = toNum(want), numOk = Number.isFinite(n) && Number.isFinite(w) && txt !== "" && want !== "";
+  const same = numOk ? n === w : COLL.compare(txt, want) === 0;
+  // comparaisons d'ordre : numériques si la valeur de la règle est un nombre (une cellule non numérique ne vérifie pas),
+  // sinon alphabétiques ; une cellule vide ne vérifie jamais
+  const cmp = () => (txt === "" ? NaN : Number.isFinite(w) && want !== "" ? (numOk ? n - w : NaN) : COLL.compare(txt, want));
+  switch (r.op) {
+    case "!=": return !same;
+    case "<": return cmp() < 0;
+    case "<=": return cmp() <= 0;
+    case ">": return cmp() > 0;
+    case ">=": return cmp() >= 0;
+    case "~": return txt.toLocaleLowerCase("fr").includes(want.toLocaleLowerCase("fr"));
+    default: return same;
+  }
+}
+function mapRuleScale(col, opts, pts, rules) {
+  const OTHER = "#C8C8C8";
+  const lbl = (r) => r.label?.trim() || (r.op === "=" || !r.op ? (r.v === "" ? "(vide)" : r.v) : `${(RULE_OPS.find((o) => o[0] === r.op) || ["", r.op])[1]} ${r.v}`);
+  const colorOf = (v) => { for (const r of rules) if (ruleTest(r, col, opts, v)) return r.c || "#000091"; return OTHER; };
+  const items = rules.map((r) => [lbl(r), r.c || "#000091"]);
+  if (pts.some((p) => colorOf(p.cv) === OTHER && !rules.some((r) => (r.c || "").toUpperCase() === OTHER))) items.push(["Autres", OTHER]);
+  return { colorOf, items };
+}
 function mapColorScale(col, opts, pts) {
   const t = baseType(col);
   const isNumeric = (t === "Numeric" || t === "Int") && pts.some((p) => typeof p.cv === "number");
@@ -1577,16 +1607,21 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
   const latC = find(spec.lat, /^lat/i), lngC = find(spec.lng, /^(lon|lng)/i), nameC = (b.mapLabel && cols.find((c) => c.colId === b.mapLabel)) || find(spec.name, /^(nom|name|libell)/i);
   if (!latC || !lngC) { body.innerHTML = '<div class="msg">Carte : colonnes Latitude / Longitude introuvables</div>'; return; }
   const colorC = b.mapColor ? cols.find((c) => c.colId === b.mapColor) : null;
+  const ringC = b.mapRing ? cols.find((c) => c.colId === b.mapRing) : null;   // contour du point, couleurs choisies
+  const ringRules = ringC ? (b.mapRules || []).filter((r) => r && r.v !== undefined) : [];
   const comC = b.mapCommunes ? ((b.mapCommune && cols.find((c) => c.colId === b.mapCommune)) || cols.find((c) => /insee|code.?com|cog|depcom/i.test(c.colId))
     || cols.find((c) => /^commune/i.test(c.colId) && ["Ref", "RefList"].includes(baseType(c)))) : null;
-  await ensureRefTables([nameC, colorC, comC].filter(Boolean));
+  await ensureRefTables([nameC, colorC, comC, ringC].filter(Boolean));
+  const ringOpts = ringC ? parseJSON(ringC.widgetOptions) : null;
   const colorOpts = colorC ? parseJSON(colorC.widgetOptions) : null;
   const pts = rows.map((r) => {
     const ll = toLatLng(toNum(r[latC.colId]), toNum(r[lngC.colId]));
     return ll && { id: r.id, lat: ll[0], lng: ll[1], name: nameC ? textOf(nameC, parseJSON(nameC.widgetOptions), r[nameC.colId]) : "",
-      cv: colorC ? r[colorC.colId] : null, code: comC ? communeCode(comC, r[comC.colId]) : null };
+      cv: colorC ? r[colorC.colId] : null, rv: ringC ? r[ringC.colId] : null, code: comC ? communeCode(comC, r[comC.colId]) : null };
   }).filter(Boolean);
   const legend = colorC ? mapColorScale(colorC, colorOpts, pts) : null;
+  const ring = ringRules.length ? mapRuleScale(ringC, ringOpts, pts.map((p) => ({ cv: p.rv })), ringRules) : null;
+  const ringOf = (v) => { const c = ring?.colorOf(v); return c && c !== "#C8C8C8" ? c : null; };   // sans règle vérifiée : contour blanc habituel
   if (!pts.length) {
     const ex = rows[0] ? `${esc(latC.colId)} = ${esc(rows[0][latC.colId])}, ${esc(lngC.colId)} = ${esc(rows[0][lngC.colId])}` : "aucune ligne";
     body.innerHTML = `<div class="msg">Carte : aucune coordonnée exploitable (${rows.length} lignes ; exemple : ${ex})</div>`; return;
@@ -1602,31 +1637,37 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
     L.tileLayer(spec.tiles, { attribution: spec.attribution, maxZoom: 19 }).addTo(map);
     const markers = new Map();
     // sans colonne de couleur : bleu, sélection en rouge ; avec : couleur de la valeur, sélection agrandie et cerclée de noir
-    const style = (on, fill) => fill
+    const style0 = (on, fill) => fill
       ? (on ? { radius: 9, color: "#161616", weight: 3, fillColor: fill, fillOpacity: 1 } : { radius: 6, color: "#fff", weight: 1.5, fillColor: fill, fillOpacity: 0.9 })
       : (on ? { radius: 8, color: "#fff", weight: 2, fillColor: "#ce0500", fillOpacity: 1 } : { radius: 6, color: "#fff", weight: 1.5, fillColor: "#000091", fillOpacity: 0.85 });
+    // contour coloré : cercle plus épais autour du point (sélection : point agrandi)
+    const style = (on, fill, rc) => (rc ? { ...style0(on, fill), color: rc, weight: on ? 4 : 3, radius: on ? 10 : 7, opacity: 1 } : style0(on, fill));
     for (const p of pts) {
       p.fill = legend ? legend.colorOf(p.cv) : null;
-      const m = L.circleMarker([p.lat, p.lng], style(p.id === selId, p.fill)).addTo(map);
+      p.ring = ringOf(p.rv);
+      const m = L.circleMarker([p.lat, p.lng], style(p.id === selId, p.fill, p.ring)).addTo(map);
       // Leaflet interprète les étiquettes comme du HTML : HTML nettoyé (popup au clic, comme la carte native), sinon texte échappé
       if (p.name && looksHtml(p.name) && !b.mapLabelsOn) m.bindPopup(safeHtml(p.name), { maxWidth: 420 });
       else if (p.name) m.bindTooltip(looksHtml(p.name) ? safeHtml(p.name) : esc(p.name), { direction: "top", offset: [0, -6], permanent: !!b.mapLabelsOn, className: b.mapLabelsOn ? "lbl" : "" });
       m.on("click", () => {
         S.sel[info.secId] = p.id;
         if (hasRenderedDependents(info.secId)) scheduleRender();
-        else for (const [id, mk] of markers) { mk.setStyle(style(id === p.id, mk.fill)); if (id === p.id) mk.bringToFront(); }
+        else for (const [id, mk] of markers) { mk.setStyle(style(id === p.id, mk.fill, mk.ring)); if (id === p.id) mk.bringToFront(); }
       });
-      m.fill = p.fill;
+      m.fill = p.fill; m.ring = p.ring;
       markers.set(p.id, m);
     }
     const saved = S.mapViews[info.secId];
     if (b.mapCommunes) drawCommunes(map, pts, comC, saved && saved.key === key);
-    if (legend?.items.length) {
+    const ringItems = (ring?.items || []).filter(([t]) => t !== "Autres");
+    if (legend?.items.length || ringItems.length) {
       const ctl = L.control({ position: "bottomleft" });
       ctl.onAdd = () => {
         const d = L.DomUtil.create("div", "map-legend");
-        d.innerHTML = `<b>${esc(colorC.label || colorC.colId)}</b>` + legend.items.map(([t, c]) =>
-          `<div><i style="background:${c}"></i>${esc(t)}</div>`).join("");
+        d.innerHTML = (legend?.items.length ? `<b>${esc(colorC.label || colorC.colId)}</b>` + legend.items.map(([t, c]) =>
+          `<div><i style="background:${esc(c)}"></i>${esc(t)}</div>`).join("") : "")
+          + (ringItems.length ? `<b${legend?.items.length ? ' style="margin-top:4px"' : ""}>Contour : ${esc(ringC.label || ringC.colId)}</b>` + ringItems.map(([t, c]) =>
+          `<div><i style="background:transparent;border:3px solid ${esc(c)};box-shadow:none"></i>${esc(t)}</div>`).join("") : "");
         L.DomEvent.disableScrollPropagation(d);
         return d;
       };
@@ -2321,6 +2362,26 @@ async function openConfig() {
   $("#config").hidden = false;
   renderConfig();
 }
+/* Éditeur des couleurs choisies d'une carte */
+function mapRulesHtml(b, i, s) {
+  const col = (S.meta.colsByTable.get(s.tableRef) || []).find((c) => c.colId === b.mapRing);
+  const tid = S.meta.tables.get(s.tableRef)?.tableId, rows = S.byId[tid];
+  const vals = col && rows ? [...new Set([...rows.values()].map((r) => String(textOf(col, parseJSON(col.widgetOptions), r[col.colId]) ?? "")))].filter(Boolean).sort(COLL.compare).slice(0, 300) : [];
+  const rules = b.mapRules || [];
+  const DEF = ["#18753C", "#E4794A", "#CE0500"];
+  return `<div class="mrules" title="Jusqu'à 3 couleurs de contour. Chaque point prend le contour de la première condition vérifiée ; les autres gardent le contour blanc habituel.">
+    <span class="lt">Couleurs du contour</span>
+    ${vals.length ? `<datalist id="mrv${i}">${vals.map((v) => `<option value="${esc(v)}">`).join("")}</datalist>` : ""}
+    ${rules.map((r, k) => `<div class="mr">
+      <input type="color" data-mr="${i}:${k}:c" value="${esc(/^#[0-9a-f]{6}$/i.test(r.c || "") ? r.c : DEF[k])}" title="Couleur du contour des points qui vérifient la condition">
+      <select data-mr="${i}:${k}:op" title="Comparaison (les nombres sont comparés comme des nombres)">${RULE_OPS.map(([o, l]) => `<option value="${o}" ${o === (r.op || "=") ? "selected" : ""}>${l}</option>`).join("")}</select>
+      <input type="text" data-mr="${i}:${k}:v" value="${esc(r.v ?? "")}" list="mrv${i}" placeholder="valeur" style="width:120px" title="Valeur telle qu'affichée dans Grist (vide = cellule vide)">
+      <input type="text" data-mr="${i}:${k}:label" value="${esc(r.label ?? "")}" placeholder="légende (facultatif)" style="width:120px" title="Texte de la légende (par défaut : la condition)">
+      <button class="icon-btn" data-mrrm="${i}:${k}" title="Supprimer cette couleur">✕</button></div>`).join("")}
+    ${rules.length < 3 ? `<button class="icon-btn" data-mradd="${i}" title="Ajouter une couleur (3 au plus)">+ Couleur</button>` : ""}
+    ${rules.length ? "" : `<small> aucune pour l'instant</small>`}
+  </div>`;
+}
 function secLabel(id) { const i = getInfo(id); return i ? `${i.title} · ${KIND[i.kind] || i.kind}` : `#${id}`; }
 function renderConfig() {
   const m = S.meta;
@@ -2366,6 +2427,8 @@ function renderConfig() {
         ${C(`data-asel="${i}"`, isSelector(b), "Liste de sélection", "Affiche cette vue sous forme de liste déroulante dans l'en-tête : choisir une valeur pilote les blocs liés, comme un sélecteur.")}
         ${isMap ? L("Étiquette", sel("mapLabel", [["", `auto (${esc(colByKey(m.colsByTable.get(s.tableRef) || [], mapSpec(s).name)?.colId || "aucune")})`], ...colOpts(s)], b.mapLabel || ""), "Colonne affichée au survol ou au clic sur un point. « auto » reprend la colonne « Name » de la carte Grist.")
           + L("Couleur selon", sel("mapColor", [["", "aucune"], ...colOpts(s)], b.mapColor || ""), "Colore les points selon la valeur d'une colonne (une couleur par valeur, ou des classes pour un nombre). Les valeurs invalides sont en rouge.")
+          + L("Contour selon", sel("mapRing", [["", "aucun"], ...colOpts(s)], b.mapRing || ""), "Colore le cercle qui entoure chaque point selon la valeur d'une colonne, avec les couleurs que vous choisissez (3 au plus). Le remplissage du point reste celui de « Couleur selon ».")
+          + (b.mapRing ? mapRulesHtml(b, i, s) : "")
           + C(`data-mcom="${i}"`, b.mapCommunes, "Tracer les communes", "Dessine le contour des communes contenant des points (geo.api.gouv.fr), dans la couleur majoritaire de leurs points.")
           + (b.mapCommunes ? L("Code INSEE", sel("mapCommune", [["", "auto"], ...colOpts(s)], b.mapCommune || ""), "Colonne donnant le code INSEE de la commune (ou une référence vers la table des communes).") : "")
           + C(`data-mlbl="${i}"`, b.mapLabelsOn, "Étiquettes toujours visibles", "Affiche l'étiquette de chaque point en permanence, au lieu de la montrer au survol.") : ""}
@@ -2439,7 +2502,7 @@ $("#panel").addEventListener("change", (ev) => {
     else draft.blocks = draft.blocks.filter((b) => b.id !== id);
     renderConfig(); return;
   }
-  if (t.dataset.f) { const b = draft.blocks[Number(t.dataset.i)]; b[t.dataset.f] = ["height", "selCol", "selGroup", "selOrder", "mapLabel", "mapColor", "mapCommune", "cardW", "colWidths", "startFold"].includes(t.dataset.f) ? t.value : Number(t.value) || 0; renderConfig(); return; }
+  if (t.dataset.f) { const b = draft.blocks[Number(t.dataset.i)]; b[t.dataset.f] = ["height", "selCol", "selGroup", "selOrder", "mapLabel", "mapColor", "mapRing", "mapCommune", "cardW", "colWidths", "startFold"].includes(t.dataset.f) ? t.value : Number(t.value) || 0; renderConfig(); return; }
   if (t.dataset.sync) { draft.blocks[Number(t.dataset.sync)].syncId = t.value.trim(); return; }
   if (t.id === "cMnUrl") { draftNav.url = t.value.trim(); return; }
   if (t.id === "cMnSingle") { draftNav.singlePage = t.checked; return; }
@@ -2453,6 +2516,7 @@ $("#panel").addEventListener("change", (ev) => {
   if (t.dataset.aslist) { draft.blocks[Number(t.dataset.aslist)].asList = t.checked; renderConfig(); return; }
   if (t.dataset.sempty) { draft.blocks[Number(t.dataset.sempty)].showEmpty = t.checked; return; }
   if (t.dataset.mcom) { draft.blocks[Number(t.dataset.mcom)].mapCommunes = t.checked; renderConfig(); return; }
+  if (t.dataset.mr) { const [i, k, f] = t.dataset.mr.split(":"); draft.blocks[Number(i)].mapRules[Number(k)][f] = t.value; return; }
   if (t.dataset.mlbl) { draft.blocks[Number(t.dataset.mlbl)].mapLabelsOn = t.checked; return; }
   if (t.dataset.asel) { draft.blocks[Number(t.dataset.asel)].asSelect = t.checked; renderConfig(); return; }
   if (t.dataset.nl) { draft.blocks[Number(t.dataset.nl)].newLine = t.checked; renderConfig(); return; }
@@ -2472,6 +2536,8 @@ $("#panel").addEventListener("click", async (ev) => {
   if (t.dataset.up) return move(Number(t.dataset.up), -1);
   if (t.dataset.down) return move(Number(t.dataset.down), 1);
   if (t.dataset.rm) { draft.blocks.splice(Number(t.dataset.rm), 1); return renderConfig(); }
+  if (t.dataset.mradd) { const b = draft.blocks[Number(t.dataset.mradd)]; b.mapRules = b.mapRules || []; if (b.mapRules.length < 3) b.mapRules.push({ op: "=", v: "", c: ["#18753C", "#E4794A", "#CE0500"][b.mapRules.length] }); return renderConfig(); }
+  if (t.dataset.mrrm) { const [i, k] = t.dataset.mrrm.split(":").map(Number); draft.blocks[i].mapRules.splice(k, 1); return renderConfig(); }
   if (t.id === "cCancel") { $("#config").hidden = true; return; }
   const mv = (i, d) => { const j = i + d, a = draftNav.items; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; renderConfig(); };
   if (t.id === "cMnAdd") { draftNav.items.push({ label: "", viewId: S.meta.pages[0]?.viewId || 0, cfg: draft.name || "" }); return renderConfig(); }
