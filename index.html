@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  « Page composée » : widget personnalisé Grist                      ║
+  ║  GriSco – « Page composée » : widget personnalisé Grist                      ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -499,6 +499,39 @@
         font-size: 11px;
         color: var(--muet);
         white-space: nowrap;
+      }
+      /* filtre rapide dans l'en-tête des blocs */
+      .bh .qf {
+        display: inline-flex;
+        border: 1px solid var(--bord);
+        border-radius: 4px;
+        overflow: hidden;
+        flex: none;
+      }
+      .bh .qf button {
+        border: 0;
+        border-left: 1px solid var(--bord);
+        background: #fff;
+        color: var(--bleu);
+        font: inherit;
+        font-size: 11.5px;
+        padding: 1px 8px;
+        cursor: pointer;
+      }
+      .bh .qf button:first-child {
+        border-left: 0;
+      }
+      .bh .qf button:hover {
+        background: var(--bleu-hover);
+      }
+      .bh .qf button.on {
+        background: var(--bleu);
+        color: #fff;
+      }
+      .bh .qfs {
+        font: inherit;
+        font-size: 12px;
+        max-width: 180px;
       }
       .bh .search {
         width: 120px;
@@ -1706,6 +1739,7 @@
       //   charts/maps : objets à détruire avant chaque rendu   mapViews : centre/zoom conservés par carte
       const S = {
         cfg: { ...DEFAULTS },
+        qf: {}, // filtre rapide : valeur choisie par bloc ("" = tous)
         meta: null,
         info: new Map(),
         cache: {},
@@ -2361,6 +2395,61 @@
         if (b.startFold === "open") return false;
         return info.kind === "chart" || (info.kind === "custom" && !isMapSection(info.sec) && !isSelector(b));
       }
+      /* ---------- Filtre rapide (un par bloc) ----------
+         Chaque bloc peut recevoir, dans son en-tête, un sélecteur « Tous | valeur 1 | valeur 2… » sur un champ
+         choisi dans sa configuration (b.qfField, ex. « Reseau »), avec une valeur à l'ouverture (b.qfDefault).
+         Le filtre n'agit que sur l'affichage du bloc (et son export CSV), pas sur les liaisons. */
+      const QF_KINDS = ["record", "detail", "chart", "custom"]; // + fiches affichées en liste
+      // qfCol — Colonne du filtre rapide dans la table d'un bloc (null si le champ est absent ou non configuré).
+      function qfCol(b, info) {
+        const id = b.qfField;
+        if (!id || !(QF_KINDS.includes(info.kind) || (info.kind === "single" && b.asList))) return null;
+        return (S.meta.colsByTable.get(info.sec.tableRef) || []).find((c) => c.colId === id) || null;
+      }
+      // qfText — Valeur d'une ligne pour le filtre rapide, telle qu'affichée (« (vide) » si vide).
+      const qfText = (col, r) => String(textOf(col, parseJSON(col.widgetOptions), r[col.colId]) ?? "").trim() || "(vide)";
+      // qfSame — Égalité de deux valeurs sans tenir compte des majuscules ni des accents (« Privé » = « PRIVE »).
+      const qfSame = (a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }) === 0;
+      // qfCur — Valeur active pour un bloc : choix de l'utilisateur pendant la session, sinon valeur à l'ouverture
+      //   du bloc, sinon « Tous » (""). S.qf est vidé à chaque enregistrement de la configuration.
+      function qfCur(b) {
+        return S.qf[b.id] !== undefined ? S.qf[b.id] : b.qfDefault || "";
+      }
+      // qfValuesOf — Valeurs connues d'un champ pour la configuration : choix déclarés dans Grist + données déjà chargées.
+      function qfValuesOf(cols) {
+        const vals = new Set();
+        for (const c of cols) {
+          for (const ch of parseJSON(c.widgetOptions)?.choices || []) vals.add(String(ch));
+          const t = S.meta.tables.get(c.parentId)?.tableId;
+          for (const r of S.byId[t]?.values() || []) vals.add(qfText(c, r));
+        }
+        vals.delete("(vide)");
+        return [...vals].sort(COLL.compare).slice(0, 200);
+      }
+      // qfApply — Ne garde que les lignes dont le champ vaut la valeur choisie pour ce bloc.
+      function qfApply(b, info, rows) {
+        const col = qfCol(b, info),
+          v = qfCur(b);
+        return col && v ? rows.filter((r) => qfSame(qfText(col, r), v)) : rows;
+      }
+      // qfHtml — Sélecteur de l'en-tête : boutons « Tous | valeurs » (liste déroulante au-delà de 4 valeurs).
+      function qfHtml(b, info, allRows) {
+        const col = qfCol(b, info);
+        if (!col) return "";
+        const cur = qfCur(b);
+        const vals = [...new Set(allRows.map((r) => qfText(col, r)))].sort(COLL.compare);
+        if (cur && !vals.some((x) => qfSame(x, cur))) vals.push(cur);
+        if (vals.length < 2 && !cur) return ""; // une seule valeur : rien à filtrer
+        const tip = `Filtrer ce bloc sur « ${col.label || col.colId} »`;
+        if (vals.length > 4)
+          return `<select class="qfs" data-qfs="${b.id}" title="${esc(tip)}"><option value="">${esc(col.label || col.colId)} : tous</option>${vals
+            .map((v) => `<option value="${esc(v)}" ${cur && qfSame(v, cur) ? "selected" : ""}>${esc(v)}</option>`)
+            .join("")}</select>`;
+        return `<span class="qf" title="${esc(tip)}">${[["", "Tous"], ...vals.map((v) => [v, v])]
+          .map(([v, l]) => `<button type="button" data-qf="${b.id}" data-qv="${esc(v)}" class="${(v ? qfSame(v, cur) : !cur) ? "on" : ""}">${esc(l)}</button>`)
+          .join("")}</span>`;
+      }
+
       // blockShell — Crée le cadre d'un bloc : en-tête (titre, compteur, recherche, export, plein écran) et zone de contenu vide.
       function blockShell(b, info, badge, extraHead = "") {
         if (S.collapsed[b.id] === undefined) S.collapsed[b.id] = initialFold(b, info);
@@ -4830,6 +4919,10 @@
             try {
               let { rows } = await rowsFor(b.id, ctx);
               if (info.kind === "record") rows = applyUserView(info, rows); // tri et filtres choisis dans les en-têtes
+              const qc = qfCol(b, info);
+              if (qc) await ensureRefTables([qc]); // champ du filtre rapide de type référence : texte affiché
+              const qfCtl = qfHtml(b, info, rows); // filtre rapide : sélecteur calculé sur toutes les lignes…
+              rows = qfApply(b, info, rows); // …puis seules les lignes choisies sont affichées
               const selId = await selectedRowId(b.id, ctx);
               const isSingle = info.kind === "single";
               if (!rows.length && !(isSingle && S.byId[info.tableId]?.get(selId))) {
@@ -4849,11 +4942,11 @@
                 } catch {
                   /* diagnostic facultatif */
                 }
-                if (S.cfg.hideEmptyBlocks) {
+                if (S.cfg.hideEmptyBlocks && !qfCur(b)) {
                   skipped.empty.push(info.title);
                   continue;
                 }
-                const el = blockShell(b, info, KIND[info.kind]);
+                const el = blockShell(b, info, KIND[info.kind], qfCtl); // le filtre reste affiché pour revenir à « Tous »
                 el.classList.add("empty");
                 el.querySelector(".bb").textContent = "Aucune donnée";
                 frag.append(el);
@@ -4871,7 +4964,7 @@
                   : info.kind === "custom"
                     ? "Graphique avancé"
                     : `${rows.length} ligne${rows.length > 1 ? "s" : ""}`;
-              const el = blockShell(b, info, badge, search);
+              const el = blockShell(b, info, badge, qfCtl + search);
               const body = el.querySelector(".bb");
               if (info.kind === "record") renderTable(info, rows, body, selId, jobs);
               else if (isSingle && b.asList)
@@ -5247,6 +5340,13 @@
       });
       $("#grid").addEventListener("click", (ev) => {
         if (S.layoutMode) return;
+        const qb = ev.target.closest("[data-qf]"); // filtre rapide : bouton d'une valeur
+        if (qb) {
+          ev.stopPropagation();
+          S.qf[Number(qb.dataset.qf)] = qb.dataset.qv;
+          scheduleRender();
+          return;
+        }
         const fb = ev.target.closest("[data-filt]");
         if (fb) {
           ev.stopPropagation();
@@ -5326,6 +5426,13 @@
         }
         const rowEl = ev.target.closest("[data-row]");
         if (rowEl) selectRow(rowEl);
+      });
+      $("#grid").addEventListener("change", (ev) => {
+        const qs = ev.target.closest("[data-qfs]"); // filtre rapide au-delà de 4 valeurs
+        if (qs) {
+          S.qf[Number(qs.dataset.qfs)] = qs.value;
+          scheduleRender();
+        }
       });
       $("#grid").addEventListener("input", (ev) => {
         const inp = ev.target.closest("[data-search]");
@@ -5417,6 +5524,7 @@
           ctx = { rows: new Map() };
         let { rows } = await rowsFor(b.id, ctx);
         if (info.kind === "record") rows = applyUserView(info, rows);
+        rows = qfApply(b, info, rows); // filtre rapide du bloc
         if (info.kind === "single" && !b.asList) {
           const id = await selectedRowId(b.id, ctx);
           const row = S.byId[info.tableId]?.get(id);
@@ -5867,6 +5975,23 @@
           "État du bloc à l'ouverture de la page. Un bloc replié n'affiche que son titre ; un clic sur le titre le déplie.",
         )}
         ${C(`data-nl="${i}"`, b.newLine, "À la ligne", "Le bloc commence une nouvelle rangée, même s'il reste de la place à droite du bloc précédent.")}
+        ${(() => {
+          // filtre rapide du bloc : champ (champs de la vue d'abord, puis autres colonnes de la table) et valeur à l'ouverture
+          if (!(["record", "detail", "chart", "custom"].includes(s.parentKey) || (s.parentKey === "single" && b.asList)) || isSelector(b)) return "";
+          const all = (m.colsByTable.get(s.tableRef) || []).filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort");
+          const shown = new Set((getInfo(b.id)?.fields || []).map((f) => f.col?.colId));
+          const opt = (c) => `<option value="${esc(c.colId)}" ${c.colId === b.qfField ? "selected" : ""}>${esc(c.label || c.colId)}</option>`;
+          const inView = byLabel(all.filter((c) => shown.has(c.colId))), others = byLabel(all.filter((c) => !shown.has(c.colId)));
+          const field = `<select data-f="qfField" data-i="${i}"><option value="">aucun</option>${inView.length ? `<optgroup label="Champs de la vue">${inView.map(opt).join("")}</optgroup>` : ""}${others.length ? `<optgroup label="Autres colonnes de la table">${others.map(opt).join("")}</optgroup>` : ""}</select>`;
+          let out = L("Filtre rapide", field, "Ajoute dans l'en-tête du bloc des boutons « Tous | valeur 1 | valeur 2… » (liste déroulante au-delà de 4 valeurs) pour filtrer ses lignes sur ce champ. Exemple : Reseau → Tous | Public | Privé.");
+          const qc = b.qfField && all.find((c) => c.colId === b.qfField);
+          if (qc) {
+            const vals = qfValuesOf([qc]);
+            if (b.qfDefault && !vals.some((v) => qfSame(v, b.qfDefault))) vals.push(b.qfDefault);
+            out += L("Filtre à l'ouverture", `<select data-f="qfDefault" data-i="${i}"><option value="">Tous</option>${vals.map((v) => `<option value="${esc(v)}" ${b.qfDefault && qfSame(v, b.qfDefault) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`, `Valeur de « ${qc.label || qc.colId} » sélectionnée à l'ouverture de la page. L'utilisateur peut ensuite changer.`);
+          }
+          return out;
+        })()}
         ${C(`data-asel="${i}"`, isSelector(b), "Liste de sélection", "Affiche cette vue sous forme de liste déroulante dans l'en-tête : choisir une valeur pilote les blocs liés, comme un sélecteur.")}
         ${
           isMap
@@ -6130,6 +6255,7 @@
           renderConfig();
           return;
         }
+        if (t.dataset.f === "qfField") draft.blocks[Number(t.dataset.i)].qfDefault = ""; // nouveau champ : valeur à revoir
         if (t.dataset.f === "mapZone") draft.blocks[Number(t.dataset.i)].mapCommunes = false; // ancienne option remplacée par « Zonage »
         if (t.dataset.f) {
           const b = draft.blocks[Number(t.dataset.i)];
@@ -6152,6 +6278,8 @@
             "cardW",
             "colWidths",
             "startFold",
+            "qfDefault",
+            "qfField",
           ].includes(t.dataset.f)
             ? t.value
             : Number(t.value) || 0;
@@ -6325,6 +6453,7 @@
           S.choosing = false;
           status("");
           S.cfg = draft;
+          S.qf = {}; // filtres rapides : on repart des valeurs à l'ouverture qui viennent d'être réglées
           $("#config").hidden = true;
           try {
             await grist.setOption("config", draft);
