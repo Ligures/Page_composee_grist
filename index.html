@@ -500,15 +500,19 @@
         color: var(--muet);
         white-space: nowrap;
       }
-      /* filtre rapide dans l'en-tête des blocs */
+      /* filtre rapide dans l'en-tête des blocs : 3 présentations (full / compact / icon), voir fitQf() */
       .bh .qf {
+        display: inline-flex;
+        flex: none;
+        position: relative;
+      }
+      .qf .qf-opts {
         display: inline-flex;
         border: 1px solid var(--bord);
         border-radius: 4px;
         overflow: hidden;
-        flex: none;
       }
-      .bh .qf button {
+      .qf .qf-opts button {
         border: 0;
         border-left: 1px solid var(--bord);
         background: #fff;
@@ -517,16 +521,96 @@
         font-size: 11.5px;
         padding: 1px 8px;
         cursor: pointer;
+        white-space: nowrap;
+        text-align: left;
       }
-      .bh .qf button:first-child {
+      .qf .qf-opts button:first-child {
         border-left: 0;
       }
-      .bh .qf button:hover {
+      .qf .qf-opts button:hover {
         background: var(--bleu-hover);
       }
-      .bh .qf button.on {
+      .qf .qf-opts button.on {
         background: var(--bleu);
         color: #fff;
+      }
+      .qf .qf-cur {
+        display: none;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid var(--bord);
+        border-radius: 4px;
+        background: #fff;
+        color: var(--bleu);
+        font: inherit;
+        font-size: 11.5px;
+        padding: 1px 6px;
+        cursor: pointer;
+        max-width: 140px;
+      }
+      .qf .qf-cur:hover {
+        background: var(--bleu-hover);
+      }
+      .qf .qf-lab {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .qf .qf-caret {
+        font-size: 9px;
+      }
+      .qf-ico {
+        width: 13px;
+        height: 13px;
+        flex: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linejoin: round;
+      }
+      .qf.full .qf-ico {
+        display: none;
+      }
+      /* compact : seule l'option active ; icône : seulement l'entonnoir (plein si un filtre est actif) */
+      .qf.compact .qf-cur,
+      .qf.icon .qf-cur {
+        display: inline-flex;
+      }
+      .qf.compact .qf-ico {
+        display: none;
+      }
+      .qf.icon .qf-lab,
+      .qf.icon .qf-caret {
+        display: none;
+      }
+      .qf.icon.active .qf-cur {
+        background: var(--bleu);
+        color: #fff;
+      }
+      .qf.icon.active .qf-ico {
+        fill: currentColor;
+      }
+      .qf.compact .qf-opts,
+      .qf.icon .qf-opts {
+        display: none;
+      }
+      /* liste ouverte : verticale, en position fixe pour ne pas être coupée par le bloc */
+      .qf.open .qf-opts {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        z-index: 40;
+        min-width: 110px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+      }
+      .qf.open .qf-opts button {
+        border-left: 0;
+        border-top: 1px solid var(--bord);
+        padding: 4px 10px;
+        font-size: 12.5px;
+      }
+      .qf.open .qf-opts button:first-child {
+        border-top: 0;
       }
       .bh .qfs {
         font: inherit;
@@ -2400,6 +2484,39 @@
          choisi dans sa configuration (b.qfField, ex. « Reseau »), avec une valeur à l'ouverture (b.qfDefault).
          Le filtre n'agit que sur l'affichage du bloc (et son export CSV), pas sur les liaisons. */
       const QF_KINDS = ["record", "detail", "chart", "custom"]; // + fiches affichées en liste
+      const QF_ICON = '<svg class="qf-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>';
+      // fitQf — Choisit la présentation du filtre rapide de chaque bloc selon la place disponible dans l'en-tête :
+      //   on garde au titre au moins 140 px (ou sa largeur entière s'il est plus court).
+      function fitQf(root = document) {
+        for (const q of root.querySelectorAll(".bh .qf")) {
+          const h2 = q.closest(".bh").querySelector("h2");
+          const need = () => h2.clientWidth < Math.min(h2.scrollWidth, 140);
+          for (const mode of ["full", "compact", "icon"]) {
+            q.classList.remove("full", "compact", "icon");
+            q.classList.add(mode);
+            if (!need()) break;
+          }
+        }
+      }
+      // qfClose — Ferme la liste ouverte d'un filtre rapide compact.
+      function qfClose() {
+        document.querySelectorAll(".qf.open").forEach((q) => q.classList.remove("open"));
+      }
+      // qfToggle — Ouvre la liste verticale des options sous le bouton (position fixe : non coupée par le bloc).
+      function qfToggle(btn) {
+        const q = btn.closest(".qf"),
+          was = q.classList.contains("open");
+        qfClose();
+        if (was) return;
+        q.classList.add("open");
+        const r = btn.getBoundingClientRect(),
+          opts = q.querySelector(".qf-opts");
+        opts.style.top = `${r.bottom + 2}px`;
+        opts.style.left = `${Math.max(4, Math.min(r.right - opts.offsetWidth, window.innerWidth - opts.offsetWidth - 4))}px`;
+      }
+      new ResizeObserver(() => fitQf()).observe(document.documentElement); // largeur du widget modifiée
+      document.addEventListener("mousedown", (e) => { if (!e.target.closest(".qf")) qfClose(); });
+      window.addEventListener("scroll", qfClose, true);
       // qfCol — Colonne du filtre rapide dans la table d'un bloc (null si le champ est absent ou non configuré).
       function qfCol(b, info) {
         const id = b.qfField;
@@ -2445,9 +2562,15 @@
           return `<select class="qfs" data-qfs="${b.id}" title="${esc(tip)}"><option value="">${esc(col.label || col.colId)} : tous</option>${vals
             .map((v) => `<option value="${esc(v)}" ${cur && qfSame(v, cur) ? "selected" : ""}>${esc(v)}</option>`)
             .join("")}</select>`;
-        return `<span class="qf" title="${esc(tip)}">${[["", "Tous"], ...vals.map((v) => [v, v])]
-          .map(([v, l]) => `<button type="button" data-qf="${b.id}" data-qv="${esc(v)}" class="${(v ? qfSame(v, cur) : !cur) ? "on" : ""}">${esc(l)}</button>`)
-          .join("")}</span>`;
+        // trois présentations, choisies par fitQf() selon la place dans l'en-tête :
+        //   « full » boutons côte à côte · « compact » seule l'option active, les autres en liste au clic
+        //   · « icon » icône de filtre (pastille si un filtre est actif), liste au clic
+        const label = cur ? vals.find((x) => qfSame(x, cur)) || cur : "Tous";
+        return `<span class="qf full${cur ? " active" : ""}" title="${esc(tip)}">
+          <button type="button" class="qf-cur" data-qftog="${b.id}" aria-haspopup="true" aria-label="${esc(tip)} : ${esc(label)}">${QF_ICON}<span class="qf-lab">${esc(label)}</span><span class="qf-caret">▾</span></button>
+          <span class="qf-opts">${[["", "Tous"], ...vals.map((v) => [v, v])]
+            .map(([v, l]) => `<button type="button" data-qf="${b.id}" data-qv="${esc(v)}" class="${(v ? qfSame(v, cur) : !cur) ? "on" : ""}">${esc(l)}</button>`)
+            .join("")}</span></span>`;
       }
 
       // blockShell — Crée le cadre d'un bloc : en-tête (titre, compteur, recherche, export, plein écran) et zone de contenu vide.
@@ -5027,6 +5150,7 @@
           document.body.style.overflow = "";
         }
         lockColumns(grid);
+        fitQf(grid); // filtres rapides : présentation selon la place
         freezeColumns(grid);
         setupMasonry(grid);
         updateFoldButton();
@@ -5340,6 +5464,12 @@
       });
       $("#grid").addEventListener("click", (ev) => {
         if (S.layoutMode) return;
+        const qt = ev.target.closest("[data-qftog]"); // filtre rapide compact : ouvrir / fermer la liste
+        if (qt) {
+          ev.stopPropagation();
+          qfToggle(qt);
+          return;
+        }
         const qb = ev.target.closest("[data-qf]"); // filtre rapide : bouton d'une valeur
         if (qb) {
           ev.stopPropagation();
