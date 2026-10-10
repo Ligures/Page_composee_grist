@@ -36,6 +36,8 @@ button { font: inherit; cursor: pointer; }
 #top.notitle .bar { position: absolute; top: 8px; right: 8px; margin: 0; z-index: 1; }
 #top.notitle .bar h1, #top.notitle .bar .spacer { display: none; }
 #top.notitle #pnav, #top.notitle #filters { padding-right: calc(var(--barw, 230px) + 12px); }
+/* la barre d'outils n'occupe que la première rangée : sous le menu des pages, les listes prennent toute la largeur */
+#top.notitle #pnav:not(:empty) ~ #filters { padding-right: 0; }
 @media (max-width: 760px) { #top.notitle .bar { position: static; justify-content: flex-end; margin-bottom: 6px; }
   #top.notitle #pnav, #top.notitle #filters { padding-right: 0; } }
 #lybar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; margin: 0 0 8px;
@@ -142,6 +144,8 @@ button { font: inherit; cursor: pointer; }
 #backdrop.on { display: block; }
 .block.maxed { position: fixed !important; inset: 10px; border-radius: 6px; padding: 0 8px 8px; z-index: 15; display: flex; flex-direction: column;
   width: auto !important; max-width: none !important; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+/* en mode empilé (masonry), les blocs ont align-self:start, qui empêcherait le bloc agrandi de s'étirer sur l'écran */
+.grid > .block.maxed { align-self: stretch !important; justify-self: stretch !important; margin: 0 !important; }
 .block.maxed > .bb { flex: 1 1 auto; min-height: 0; display: flex !important; flex-direction: column; overflow: auto; }
 .block.maxed > .bb > .chart-box, .block.maxed > .bb > .plot-box, .block.maxed > .bb > .map-box { flex: 1 1 auto; height: auto; min-height: 0; }
 .block.maxed > .bb > .tbl-wrap { flex: 1 1 auto; max-height: none !important; }
@@ -238,7 +242,9 @@ textarea.ed-input { min-height: 60px; resize: vertical; }
 
 /* Graphiques */
 .chart-box { position: relative; height: var(--h, var(--ch, 260px)); padding: 6px 8px; }
-.plot-box { height: var(--h, var(--ch, 260px)); padding: 4px; }
+/* Plotly prend la taille de la boîte, marge intérieure comprise : sans marge ni débordement, aucun ascenseur parasite */
+.plot-box { height: var(--h, var(--ch, 260px)); padding: 0; overflow: hidden; }
+.chart-box { overflow: hidden; }
 .map-box { height: var(--h, 320px); z-index: 0; }
 .leaflet-container { font: inherit; font-size: 12px; }
 .qpvinfo { margin-top: 3px; font-size: 11px; color: #CE0500; font-weight: 700; }
@@ -1489,6 +1495,12 @@ function communeCode(col, v) {
     const keys = Object.keys(row);
     const pref = keys.filter((k) => /insee|code.?com|cog|depcom/i.test(k)).concat(keys);   // colonnes « code » d'abord
     for (const k of pref) if (ok(row[k])) return String(row[k]).trim().toUpperCase();
+    // code porté par une référence de la table cible (ex. Commune → REF_COG)
+    const tcols = (S.meta.colsByTable.get([...S.meta.tables.values()].find((t) => t.tableId === refTarget(col))?.id) || []);
+    for (const c of tcols.filter((c) => baseType(c) === "Ref" && /insee|code|cog|commune/i.test(c.colId + " " + (c.label || "")))) {
+      const sub = S.byId[refTarget(c)]?.get(row[c.colId]);
+      if (sub) for (const k of Object.keys(sub)) if (/insee|code.?com|cog|depcom/i.test(k) && ok(sub[k])) return String(sub[k]).trim().toUpperCase();
+    }
     return null;
   }
   const sv = String(v).trim();
@@ -1679,10 +1691,36 @@ async function zoneTableValues(b) {
   }
   return { map: m, label: vC.label || vC.colId };
 }
+/* Commune d'un point d'après sa position : département obtenu par geo.api.gouv.fr (une requête, mise en cache),
+   puis recherche du contour communal qui contient le point. Sert quand la colonne ne donne pas de code INSEE. */
+const depAtCache = {};
+function depAt(lat, lng) {
+  const k = `${lat.toFixed(2)},${lng.toFixed(2)}`;
+  return (depAtCache[k] ??= fetch(`https://geo.api.gouv.fr/communes?lat=${lat}&lon=${lng}&fields=code,codeDepartement`)
+    .then((r) => (r.ok ? r.json() : [])).then((l) => l[0]?.codeDepartement || null).catch(() => null));
+}
+async function locateCommunes(pts) {
+  const deps = new Set(pts.filter((p) => p.code).map((p) => depOf(p.code)));
+  for (let guard = 0; guard < 6; guard++) {
+    const rest = pts.filter((p) => !p.code);
+    if (!rest.length) break;
+    const feats = (await Promise.all([...deps].map((d) => fetchCommuneShapes(d).catch(() => null)))).flatMap((fc) => fc?.features || []);
+    for (const p of rest) { const f = feats.find((f) => f.geometry && inGeom(f.geometry, p.lng, p.lat)); if (f) p.code = String(f.properties.code).toUpperCase(); }
+    const left = pts.find((p) => !p.code);
+    if (!left) break;
+    const d = await depAt(left.lat, left.lng);
+    if (!d || deps.has(d)) break;   // hors de France ou contour introuvable : on s'arrête
+    deps.add(d);
+  }
+}
 async function drawZones(map, pts, comC, keepView, b, sumC) {
   const mode = zoneMode(b);
   const note = (msg) => { const c = L.control({ position: "topright" }); c.onAdd = () => { const d = L.DomUtil.create("div", "map-legend"); d.textContent = msg; return d; }; c.addTo(map); };
-  if (!comC) return note("Zonage : colonne du code INSEE introuvable");
+  if (pts.some((p) => !p.code)) {
+    if (comC) console.info(`[GriSco] carte : ${pts.filter((p) => !p.code).length} point(s) sans code INSEE lisible dans « ${comC.label || comC.colId} » (${comC.type}) — commune déduite de la position`);
+    await locateCommunes(pts);
+    if (!map._container?.isConnected) return;
+  }
   const byCode = new Map();
   for (const p of pts) if (p.code) { if (!byCode.has(p.code)) byCode.set(p.code, []); byCode.get(p.code).push(p); }
   if (!byCode.size) return note("Zonage : aucun code INSEE reconnu");
@@ -1793,7 +1831,7 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
   const qpvDist = Number(b.qpvDist ?? 300) || 0;
   const ringC = b.mapRing && !qpvRing ? cols.find((c) => c.colId === b.mapRing) : null;   // contour du point, couleurs choisies
   const ringRules = ringC ? (b.mapRules || []).filter((r) => r && r.v !== undefined) : [];
-  const comC = zoneMode(b) ? ((b.mapCommune && cols.find((c) => c.colId === b.mapCommune)) || cols.find((c) => /insee|code.?com|cog|depcom/i.test(c.colId))
+  const comC = zoneMode(b) && b.mapCommune !== "__pos" ? ((b.mapCommune && cols.find((c) => c.colId === b.mapCommune)) || cols.find((c) => /insee|code.?com|cog|depcom/i.test(c.colId))
     || cols.find((c) => /^commune/i.test(c.colId) && ["Ref", "RefList"].includes(baseType(c)))) : null;
   await ensureRefTables([nameC, colorC, comC, ringC].filter(Boolean));
   const ringOpts = ringC ? parseJSON(ringC.widgetOptions) : null;
@@ -2583,15 +2621,17 @@ async function openConfig() {
   $("#config").hidden = false;
   renderConfig();
 }
+/* Listes de colonnes de la configuration : ordre alphabétique du libellé affiché */
+const byLabel = (cols) => cols.slice().sort((a, b) => COLL.compare(a.label || a.colId, b.label || b.colId));
 /* Choix de la table Grist qui colore les zones */
 function zoneTableHtml(b, i) {
   const m = S.meta, tabs = [...m.tables.values()].filter((t) => t.tableId && !t.tableId.startsWith("_grist") && !t.summarySourceTable && !/^W_/.test(t.tableId));
   const t = tabs.find((x) => x.tableId === b.zoneTable);
-  const cols = t ? (m.colsByTable.get(t.id) || []).filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort") : [];
+  const cols = t ? byLabel((m.colsByTable.get(t.id) || []).filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort")) : [];
   const so = (f, opts, cur) => `<select data-f="${f}" data-i="${i}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(cur) ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
   const lab = (txt, ctrl, tip) => `<label title="${esc(tip)}"><span class="lt">${txt}</span> ${ctrl}</label>`;
   const code = { communes: "code INSEE", epci: "SIREN de l'EPCI", iris: "code IRIS (9 caractères)" }[zoneMode(b)] || "code";
-  return lab("Table", so("zoneTable", [["", "—"], ...tabs.map((x) => [x.tableId, x.tableId])], b.zoneTable || ""), "Table Grist contenant une ligne par zone (par exemple des données INSEE par IRIS).")
+  return lab("Table", so("zoneTable", [["", "—"], ...tabs.sort((x, y) => COLL.compare(x.tableId, y.tableId)).map((x) => [x.tableId, x.tableId])], b.zoneTable || ""), "Table Grist contenant une ligne par zone (par exemple des données INSEE par IRIS).")
     + (t ? lab("Colonne du code", so("zoneKey", [["", "—"], ...cols.map((c) => [c.colId, c.label || c.colId])], b.zoneKey || ""), `Colonne contenant le ${code}, qui relie chaque ligne à sa zone.`)
       + lab("Colonne de la valeur", so("zoneVal", [["", "—"], ...cols.map((c) => [c.colId, c.label || c.colId])], b.zoneVal || ""), "Valeur qui colore la zone : dégradé en 5 classes pour un nombre, une couleur par valeur pour un texte.") : "");
 }
@@ -2631,7 +2671,7 @@ function renderConfig() {
   // libellé avec explication au survol
   const L = (text, ctrl, tip, after = false) => `<label${tip ? ` title="${esc(tip)}"` : ""}>${after ? `${ctrl} <span class="lt">${text}</span>` : `<span class="lt">${text}</span> ${ctrl}`}</label>`;
   const C = (attr, on, text, tip) => L(text, `<input type="checkbox" ${attr} ${on ? "checked" : ""}>`, tip, true);
-  const colOpts = (s) => (m.colsByTable.get(s.tableRef) || []).filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort").map((c) => [c.colId, esc(c.label || c.colId)]);
+  const colOpts = (s) => byLabel((m.colsByTable.get(s.tableRef) || []).filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort")).map((c) => [c.colId, esc(c.label || c.colId)]);
   const chosen = draft.blocks.map((b, i) => {
     const s = m.sections.get(b.id);
     if (!s) return `<li><span style="color:var(--rouge)">Vue #${b.id} introuvable (supprimée ?)</span><button class="icon-btn" data-rm="${i}" title="Retirer de la page">✕</button></li>`;
@@ -2668,8 +2708,8 @@ function renderConfig() {
           + L("Zonage", sel("mapZone", [["", "aucun"], ["communes", "communes"], ["epci", "EPCI (intercommunalités)"], ["iris", "IRIS (quartiers INSEE)"]], zoneMode(b)), "Dessine sous les points les communes qui en contiennent, les EPCI entiers (contours geo.api.gouv.fr, communes fusionnées), ou les IRIS des communes découpées en quartiers (service IGN, édition la plus récente).")
           + (zoneMode(b) ? L("Couleur des zones", sel("zoneColor", [["", zoneMode(b) === "epci" ? "une couleur par EPCI" : "couleur majoritaire des points"], ["count", "selon le nombre de points"], ["sum", "selon la somme d'une colonne"], ["table", "selon une table Grist (par code)"]], b.zoneColor || ""), "Dégradé de bleus en 5 classes (quantiles) selon le nombre de points de chaque zone, la somme d'une colonne numérique (effectifs…), ou une valeur lue dans une table Grist reliée par le code de la zone (code INSEE, SIREN de l'EPCI, code IRIS à 9 caractères).") : "")
           + (zoneMode(b) && b.zoneColor === "table" ? zoneTableHtml(b, i) : "")
-          + (zoneMode(b) && b.zoneColor === "sum" ? L("Colonne à additionner", sel("zoneSum", [["", "—"], ...(m.colsByTable.get(s.tableRef) || []).filter((c) => ["Numeric", "Int"].includes(baseType(c))).map((c) => [c.colId, esc(c.label || c.colId)])], b.zoneSum || ""), "Colonne numérique additionnée pour chaque zone (par exemple l'effectif des écoles).") : "")
-          + (zoneMode(b) ? L("Code INSEE", sel("mapCommune", [["", "auto"], ...colOpts(s)], b.mapCommune || ""), "Colonne donnant le code INSEE de la commune (ou une référence vers la table des communes).") : "")
+          + (zoneMode(b) && b.zoneColor === "sum" ? L("Colonne à additionner", sel("zoneSum", [["", "—"], ...byLabel((m.colsByTable.get(s.tableRef) || []).filter((c) => ["Numeric", "Int"].includes(baseType(c)))).map((c) => [c.colId, esc(c.label || c.colId)])], b.zoneSum || ""), "Colonne numérique additionnée pour chaque zone (par exemple l'effectif des écoles).") : "")
+          + (zoneMode(b) ? L("Code INSEE", sel("mapCommune", [["", "auto"], ["__pos", "position des points"], ...colOpts(s)], b.mapCommune || ""), "Colonne donnant le code INSEE de la commune (ou une référence vers la table des communes). « position des points » : la commune est déduite des coordonnées, sans colonne. Si la colonne ne donne pas de code lisible, la position est utilisée automatiquement.") : "")
           + C(`data-mlbl="${i}"`, b.mapLabelsOn, "Étiquettes toujours visibles", "Affiche l'étiquette de chaque point en permanence, au lieu de la montrer au survol.") : ""}
         ${isSelector(b) ? L("Colonne affichée", sel("selCol", [["", "auto"], ...colOpts(s)], b.selCol || ""), "Colonne dont les valeurs apparaissent dans la liste déroulante.")
           + L("Ordre", sel("selOrder", [["", "alphabétique"], ["vue", "celui de la vue Grist"]], b.selOrder || ""), "Ordre des valeurs dans la liste.")
