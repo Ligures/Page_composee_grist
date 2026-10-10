@@ -2111,16 +2111,17 @@ async function render() {
   await renderSelectors(blocks.filter(isSelector), ctx);
   setNoTitle();
 
-  let current = "";
+  let current = "", shown = 0, interrupted = false;
+  const skipped = { unsupported: [], empty: [] };   // diagnostic : pourquoi un bloc n'est pas affiché
   const t0 = performance.now();
   const watch = setInterval(() => { if (current) status(`Calcul en cours : « ${current} »…`); }, 700);
   try {
   for (const b of blocks.filter((x) => !isSelector(x))) {
     const info = getInfo(b.id);
-    if (!SUPPORTED.includes(info.kind)) continue;
+    if (!SUPPORTED.includes(info.kind)) { skipped.unsupported.push(`${info.title} (${info.kind})`); continue; }
     current = info.title;
     await new Promise((r) => setTimeout(r, 0));   // rend la main : l'indicateur et les clics restent actifs
-    if (stale()) return;
+    if (stale()) { interrupted = true; return; }
     const tb = performance.now();
     if (S.cfg.flux && b.newLine) { const br = document.createElement("div"); br.className = "brk"; frag.append(br); }
     try {
@@ -2129,7 +2130,7 @@ async function render() {
       const selId = await selectedRowId(b.id, ctx);
       const isSingle = info.kind === "single";
       if (!rows.length && !(isSingle && S.byId[info.tableId]?.get(selId))) {
-        if (S.cfg.hideEmptyBlocks) continue;
+        if (S.cfg.hideEmptyBlocks) { skipped.empty.push(info.title); continue; }
         const el = blockShell(b, info, KIND[info.kind]);
         el.classList.add("empty"); el.querySelector(".bb").textContent = "Aucune donnée";
         frag.append(el); continue;
@@ -2146,7 +2147,7 @@ async function render() {
       else if (info.kind === "chart") renderChart(info, rows, body, jobs);
       else if (info.kind === "custom" && isMapSection(info.sec)) await renderMap(info, rows, body, jobs, selId, b);
       else if (info.kind === "custom") await renderAdvChart(info, rows, body, jobs);
-      frag.append(el);
+      frag.append(el); shown++;
       const ms = Math.round(performance.now() - tb);
       if (ms > 300) console.info(`[GriSco] « ${info.title} » (${KIND[info.kind] || info.kind}) : ${rows.length} lignes, ${ms} ms`);
     } catch (e) {
@@ -2155,8 +2156,22 @@ async function render() {
       frag.append(el);
     }
   }
-  } finally { clearInterval(watch); if (current) status(""); console.info(`[GriSco] page « ${S.cfg.name} » calculée en ${Math.round(performance.now() - t0)} ms`); }
+  } finally {
+    clearInterval(watch); if (current) status("");
+    console.info(`[GriSco] page « ${S.cfg.name} » ${interrupted ? "interrompue (un rendu plus récent a pris le relais)" : "calculée"} en ${Math.round(performance.now() - t0)} ms`
+      + ` — blocs : ${blocks.length} configurés, ${blocks.filter(isSelector).length} liste(s) de sélection, ${shown} affichés`
+      + (skipped.empty.length ? `, ${skipped.empty.length} vides masqués [${skipped.empty.join(" ; ")}]` : "")
+      + (skipped.unsupported.length ? `, ${skipped.unsupported.length} non pris en charge [${skipped.unsupported.join(" ; ")}]` : ""));
+  }
   if (stale()) return;
+  // jamais de page blanche sans explication
+  if (!frag.childElementCount) {
+    const why = skipped.empty.length ? `aucune donnée à afficher pour la sélection en cours (${skipped.empty.length} bloc(s) vide(s) masqué(s) par l'option « Masquer les blocs sans données »)`
+      : skipped.unsupported.length ? `type de vue non pris en charge : ${skipped.unsupported.join(", ")}`
+      : blocks.every(isSelector) ? "la configuration ne contient que des listes de sélection" : "aucun bloc à afficher";
+    const d = document.createElement("div"); d.className = "msg"; d.style.padding = "24px"; d.textContent = `Rien à afficher : ${why}.`;
+    frag.append(d);
+  }
   S.charts.forEach((c) => c.destroy()); S.charts = [];
   if (window.Plotly) grid.querySelectorAll(".plot-box").forEach((el) => Plotly.purge(el));
   S.maps.forEach((m) => m.remove()); S.maps = [];
