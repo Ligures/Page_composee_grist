@@ -2174,13 +2174,10 @@ async function render() {
       + (skipped.detail?.length ? `\n  ${skipped.detail.join("\n  ")}` : ""));
   }
   if (stale()) return;
-  // jamais de page blanche sans explication
+  // jamais de page blanche : message simple (le détail reste dans la console)
   if (!frag.childElementCount) {
-    const why = skipped.empty.length ? `aucune donnée à afficher pour la sélection en cours (${skipped.empty.length} bloc(s) vide(s) masqué(s) par l'option « Masquer les blocs sans données »)`
-      : skipped.unsupported.length ? `type de vue non pris en charge : ${skipped.unsupported.join(", ")}`
-      : blocks.every(isSelector) ? "la configuration ne contient que des listes de sélection" : "aucun bloc à afficher";
-    const d = document.createElement("div"); d.className = "msg"; d.style.cssText = "padding:24px;white-space:pre-line";
-    d.textContent = `Rien à afficher : ${why}.` + (skipped.detail?.length ? `\n\nDétail :\n• ${skipped.detail.join("\n• ")}` : "");
+    const d = document.createElement("div"); d.className = "msg"; d.style.padding = "24px";
+    d.textContent = skipped.unsupported.length && !skipped.empty.length ? `Type de vue non pris en charge : ${skipped.unsupported.join(", ")}` : "Aucune donnée, pas d'élément sélectionné";
     frag.append(d);
   }
   S.charts.forEach((c) => c.destroy()); S.charts = [];
