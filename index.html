@@ -2130,6 +2130,14 @@ async function render() {
       const selId = await selectedRowId(b.id, ctx);
       const isSingle = info.kind === "single";
       if (!rows.length && !(isSingle && S.byId[info.tableId]?.get(selId))) {
+        // diagnostic : table complète vs filtrée, et origine de la liaison
+        try {
+          const total = (await fetchRows(info.tableId)).length, srcId = info.sec.linkSrcSectionRef, src = srcId ? getInfo(srcId) : null;
+          const srcSel = src ? await selectedRowId(srcId, ctx) : 0;
+          const srcRow = src ? S.byId[src.tableId]?.get(srcSel) : null;
+          const how = !src ? "aucune liaison" : `lié à « ${src.title} »${isRendered(srcId) ? "" : " (vue absente de la page"}${!isRendered(srcId) ? (S.extSel.has(srcId) ? ", sélection reçue de Grist)" : ", pas de sélection reçue de Grist)") : ""}, ligne sélectionnée : ${srcSel || "aucune"}${srcRow ? "" : srcSel ? " (introuvable)" : ""}`;
+          skipped.detail = (skipped.detail || []).concat(`${info.title} : 0 ligne sur ${total} dans ${info.tableId} — ${how}`);
+        } catch { /* diagnostic facultatif */ }
         if (S.cfg.hideEmptyBlocks) { skipped.empty.push(info.title); continue; }
         const el = blockShell(b, info, KIND[info.kind]);
         el.classList.add("empty"); el.querySelector(".bb").textContent = "Aucune donnée";
@@ -2161,7 +2169,9 @@ async function render() {
     console.info(`[GriSco] page « ${S.cfg.name} » ${interrupted ? "interrompue (un rendu plus récent a pris le relais)" : "calculée"} en ${Math.round(performance.now() - t0)} ms`
       + ` — blocs : ${blocks.length} configurés, ${blocks.filter(isSelector).length} liste(s) de sélection, ${shown} affichés`
       + (skipped.empty.length ? `, ${skipped.empty.length} vides masqués [${skipped.empty.join(" ; ")}]` : "")
-      + (skipped.unsupported.length ? `, ${skipped.unsupported.length} non pris en charge [${skipped.unsupported.join(" ; ")}]` : ""));
+      + (skipped.unsupported.length ? `, ${skipped.unsupported.length} non pris en charge [${skipped.unsupported.join(" ; ")}]` : "")
+      + ` — widget posé sur ${S.ext.tableId || "?"}, ligne Grist ${S.ext.rowId || "aucune"}`
+      + (skipped.detail?.length ? `\n  ${skipped.detail.join("\n  ")}` : ""));
   }
   if (stale()) return;
   // jamais de page blanche sans explication
@@ -2169,7 +2179,8 @@ async function render() {
     const why = skipped.empty.length ? `aucune donnée à afficher pour la sélection en cours (${skipped.empty.length} bloc(s) vide(s) masqué(s) par l'option « Masquer les blocs sans données »)`
       : skipped.unsupported.length ? `type de vue non pris en charge : ${skipped.unsupported.join(", ")}`
       : blocks.every(isSelector) ? "la configuration ne contient que des listes de sélection" : "aucun bloc à afficher";
-    const d = document.createElement("div"); d.className = "msg"; d.style.padding = "24px"; d.textContent = `Rien à afficher : ${why}.`;
+    const d = document.createElement("div"); d.className = "msg"; d.style.cssText = "padding:24px;white-space:pre-line";
+    d.textContent = `Rien à afficher : ${why}.` + (skipped.detail?.length ? `\n\nDétail :\n• ${skipped.detail.join("\n• ")}` : "");
     frag.append(d);
   }
   S.charts.forEach((c) => c.destroy()); S.charts = [];
