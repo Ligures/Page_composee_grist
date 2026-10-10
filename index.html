@@ -241,6 +241,7 @@ textarea.ed-input { min-height: 60px; resize: vertical; }
 .plot-box { height: var(--h, var(--ch, 260px)); padding: 4px; }
 .map-box { height: var(--h, 320px); z-index: 0; }
 .leaflet-container { font: inherit; font-size: 12px; }
+.qpvinfo { margin-top: 3px; font-size: 11px; color: #CE0500; font-weight: 700; }
 .map-legend { background: rgba(255,255,255,.92); padding: 6px 8px; border-radius: 4px; font-size: 11px; line-height: 1.5;
   max-height: 180px; overflow: auto; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
 .map-legend b { display: block; margin-bottom: 2px; }
@@ -1417,6 +1418,7 @@ const LIBS = {
   leafletCss: ["https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css", "sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"],
   leaflet:    ["https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js", "sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"],
   plotly:     ["https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js", "sha384-cCVCZkAjYNxaYKbM8lsArLznDF/SvMFr1jcZrvOpSTCa0W40ZAdLzHCEulnUa5i7"],
+  clip:       ["https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js", "sha384-2gzcIyrtB96QDjrxsFcJ1O461CWiXJ8fiHgIkJLwTgy4WTktHXTOXt4dviXz9Y5Q"],
   purify:     ["https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js", "sha384-JEyTNhjM6R1ElGoJns4U2Ln4ofPcqzSsynQkmEc/KGy6336qAZl70tDLufbkla+3"],
 };
 function loadLib([src, integrity], name, css = false) {
@@ -1496,7 +1498,7 @@ function communeCode(col, v) {
 }
 const depOf = (code) => (code.startsWith("97") ? code.slice(0, 3) : code.slice(0, 2));
 function fetchCommuneShapes(dep) {
-  S.geoCache[dep] ??= fetch(`https://geo.api.gouv.fr/departements/${dep}/communes?format=geojson&geometry=contour&fields=nom,code`)
+  S.geoCache[dep] ??= fetch(`https://geo.api.gouv.fr/departements/${dep}/communes?format=geojson&geometry=contour&fields=nom,code,codeEpci,epci`)
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
     .catch((e) => { delete S.geoCache[dep]; throw e; });
   return S.geoCache[dep];
@@ -1573,32 +1575,135 @@ function mapColorScale(col, opts, pts) {
   const items = [...shownKeys.map((k) => [k, map.get(k)]), ...(shownKeys.length < keys.length ? [["Autres", "#999"]] : [])];
   return { colorOf: (v) => map.get(label(v)) || "#999", items };
 }
-async function drawCommunes(map, pts, comC, keepView) {
+/* Couche de zonage sous les points : communes ou EPCI (contours geo.api.gouv.fr).
+   Les EPCI sont obtenus en fusionnant les contours de leurs communes (polygon-clipping). */
+let clipP = null;
+const loadClip = () => (clipP ??= (window.polygonClipping ? Promise.resolve() : loadLib(LIBS.clip, "polygon-clipping")).catch(() => {}));
+const zoneMode = (b) => b.mapZone || (b.mapCommunes ? "communes" : "");
+const QRAMP = ["#e8edff", "#bccaf6", "#8aa1ea", "#4f6fd6", "#1d3fb8"];
+function quantScale(vals, fmt) {   // 5 classes par quantiles
+  const v = [...new Set(vals.filter(Number.isFinite))].sort((a, b) => a - b);
+  if (!v.length) return { colorOf: () => QRAMP[0], items: [] };
+  if (v.length <= 5) return { colorOf: (x) => QRAMP[Math.round(v.indexOf(x) * 4 / Math.max(1, v.length - 1))] || QRAMP[0], items: v.map((x, i) => [fmt(x), QRAMP[Math.round(i * 4 / Math.max(1, v.length - 1))]]) };
+  const q = (k) => v[Math.min(v.length - 1, Math.floor(k * v.length / 5))], cuts = [q(1), q(2), q(3), q(4)];
+  const bounds = [v[0], ...cuts, v[v.length - 1]];
+  return { colorOf: (x) => QRAMP[cuts.filter((c) => x >= c).length], items: QRAMP.map((c, i) => [`${fmt(bounds[i])} – ${fmt(bounds[i + 1])}`, c]) };
+}
+/* Quartiers prioritaires (QPV) : fichier GeoJSON (WGS84) déposé à côté du widget, par défaut qpv-bretagne.geojson.
+   Chaque point est situé : dans un QPV, à moins de X m, ou hors QPV. */
+const QPV_DEFAULT = "qpv-bretagne.geojson", QPV_IN = "#CE0500", QPV_NEAR = "#E4794A";
+const qpvCache = {};
+function loadQpv(url) {
+  const u = new URL(String(url || "").trim() || QPV_DEFAULT, location.href);
+  if (!/^https?:$/.test(u.protocol)) return Promise.reject(new Error("adresse du fichier QPV invalide"));
+  return (qpvCache[u.href] ??= fetch(u.href).then((r) => { if (!r.ok) throw new Error(`fichier QPV introuvable (HTTP ${r.status})`); return r.json(); })
+    .then((fc) => {
+      const polys = [];
+      for (const f of fc.features || []) {
+        const g = f.geometry; if (!g) continue;
+        const list = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+        let bb = [Infinity, Infinity, -Infinity, -Infinity];
+        for (const pg of list) for (const [x, y] of pg[0]) bb = [Math.min(bb[0], x), Math.min(bb[1], y), Math.max(bb[2], x), Math.max(bb[3], y)];
+        polys.push({ props: f.properties || {}, list, bb });
+      }
+      return { fc, polys };
+    }).catch((e) => { delete qpvCache[u.href]; throw e; }));
+}
+function inRing(x, y, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function qpvLocate(q, lat, lng, maxD) {   // → { props, d } (d = 0 : dans le quartier ; d en mètres sinon) ou null
+  const kx = 111320 * Math.cos(lat * Math.PI / 180), ky = 110540;
+  const mx = maxD / kx, my = maxD / ky;
+  let best = null;
+  for (const P of q.polys) {
+    if (lng < P.bb[0] - mx || lng > P.bb[2] + mx || lat < P.bb[1] - my || lat > P.bb[3] + my) continue;
+    for (const pg of P.list) if (inRing(lng, lat, pg[0]) && !pg.slice(1).some((h) => inRing(lng, lat, h))) return { props: P.props, d: 0 };
+    if (!maxD) continue;
+    for (const pg of P.list) for (const r of pg) for (let i = 1; i < r.length; i++) {   // distance au bord
+      const ax = (r[i - 1][0] - lng) * kx, ay = (r[i - 1][1] - lat) * ky, bx = (r[i][0] - lng) * kx, by = (r[i][1] - lat) * ky;
+      const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy, t = L2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L2)) : 0;
+      const d = Math.hypot(ax + t * dx, ay + t * dy);
+      if (d <= maxD && (!best || d < best.d)) best = { props: P.props, d };
+    }
+  }
+  return best;
+}
+const qpvText = (q) => q ? `QPV ${q.props.lib_qp || q.props.code_qp || ""}${q.props.lib_com ? ` (${q.props.lib_com})` : ""}${q.d ? ` — à ${Math.round(q.d)} m` : ""}` : "";
+async function drawZones(map, pts, comC, keepView, b, sumC) {
+  const mode = zoneMode(b);
   const note = (msg) => { const c = L.control({ position: "topright" }); c.onAdd = () => { const d = L.DomUtil.create("div", "map-legend"); d.textContent = msg; return d; }; c.addTo(map); };
-  if (!comC) return note("Communes : colonne du code INSEE introuvable");
+  if (!comC) return note("Zonage : colonne du code INSEE introuvable");
   const byCode = new Map();
   for (const p of pts) if (p.code) { if (!byCode.has(p.code)) byCode.set(p.code, []); byCode.get(p.code).push(p); }
-  if (!byCode.size) return note("Communes : aucun code INSEE reconnu");
+  if (!byCode.size) return note("Zonage : aucun code INSEE reconnu");
   try {
     const deps = [...new Set([...byCode.keys()].map(depOf))];
-    const fcs = await Promise.all(deps.map(fetchCommuneShapes));
+    const [fcs] = await Promise.all([Promise.all(deps.map(fetchCommuneShapes)), mode === "epci" ? loadClip() : null]);
     if (!map._container?.isConnected) return;
-    const feats = fcs.flatMap((fc) => fc.features || []).filter((f) => byCode.has(String(f.properties?.code).toUpperCase()));
-    // couleur d'une commune = couleur majoritaire de ses points
-    const fillOf = (code) => {
-      const n = new Map();
-      for (const p of byCode.get(code)) { const c = p.fill || "#000091"; n.set(c, (n.get(c) || 0) + 1); }
-      return [...n].sort((a, c) => c[1] - a[1])[0][0];
+    const all = fcs.flatMap((fc) => fc.features || []);
+    const codeOf = (f) => String(f.properties?.code).toUpperCase();
+    // zones : { key, name, feats, pts }
+    const zones = new Map();
+    if (mode === "epci") {
+      for (const f of all) {
+        const k = f.properties?.codeEpci || f.properties?.epci?.code; if (!k) continue;
+        if (!zones.has(k)) zones.set(k, { key: k, name: f.properties?.epci?.nom || `EPCI ${k}`, feats: [], pts: [] });
+        zones.get(k).feats.push(f);
+      }
+      for (const z of zones.values()) for (const f of z.feats) z.pts.push(...(byCode.get(codeOf(f)) || []));
+      for (const [k, z] of zones) if (!z.pts.length) zones.delete(k);   // seulement les EPCI qui contiennent des points
+    } else {
+      for (const f of all) { const c = codeOf(f); if (byCode.has(c)) zones.set(c, { key: c, name: f.properties.nom, feats: [f], pts: byCode.get(c) }); }
+    }
+    // valeur et couleur de chaque zone
+    const how = b.zoneColor || "";
+    const val = (z) => (how === "sum" && sumC ? z.pts.reduce((t, p) => t + (Number.isFinite(p.sv) ? p.sv : 0), 0) : z.pts.length);
+    const fmtN = (x) => (Number.isInteger(x) ? x : Math.round(x * 10) / 10).toLocaleString("fr-FR");
+    let scale = null;
+    if (how) scale = quantScale([...zones.values()].map(val), fmtN);
+    const majority = (z) => { const n = new Map(); for (const p of z.pts) { const c = p.fill || "#000091"; n.set(c, (n.get(c) || 0) + 1); } return [...n].sort((a, c) => c[1] - a[1])[0]?.[0] || "#000091"; };
+    [...zones.values()].sort((a, c) => COLL.compare(a.name, c.name)).forEach((z, i) => {
+      z.value = val(z);
+      z.color = scale ? scale.colorOf(z.value) : mode === "epci" ? distinctColor(i) : majority(z);
+    });
+    // géométrie : fusion des communes pour un EPCI
+    const geomOf = (z) => {
+      if (z.feats.length === 1) return z.feats[0].geometry;
+      const polys = z.feats.map((f) => (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates));
+      if (window.polygonClipping) { try { return { type: "MultiPolygon", coordinates: polygonClipping.union(...polys) }; } catch { /* repli ci-dessous */ } }
+      return { type: "MultiPolygon", coordinates: polys.flat() };
     };
-    if (!map.getPane("communes")) map.createPane("communes").style.zIndex = 350;   // sous les points
+    const feats = [...zones.values()].map((z) => ({ type: "Feature", properties: z, geometry: geomOf(z) }));
+    if (!map.getPane("zones")) map.createPane("zones").style.zIndex = 350;   // sous les points
+    const strong = mode === "epci" || !!how;
     const layer = L.geoJSON({ type: "FeatureCollection", features: feats }, {
-      pane: "communes",
-      style: (f) => { const c = fillOf(String(f.properties.code).toUpperCase()); return { color: c, weight: 1.5, opacity: 0.9, fillColor: c, fillOpacity: 0.18 }; },
-      onEachFeature: (f, l) => l.bindTooltip(`${esc(f.properties.nom)} (${byCode.get(String(f.properties.code).toUpperCase()).length})`, { sticky: true }),
+      pane: "zones",
+      style: (f) => ({ color: how ? "#1d3fb8" : f.properties.color, weight: mode === "epci" ? 2.5 : 1.5, opacity: 0.95, fillColor: f.properties.color, fillOpacity: strong ? (how ? 0.55 : 0.2) : 0.18 }),
+      onEachFeature: (f, l) => {
+        const z = f.properties;
+        l.bindTooltip(`<b>${esc(z.name)}</b><br>${z.pts.length} point${z.pts.length > 1 ? "s" : ""}` + (how === "sum" && sumC ? `<br>${esc(sumC.label || sumC.colId)} : ${fmtN(z.value)}` : ""), { sticky: true });
+      },
     }).addTo(map);
     if (!keepView && feats.length) map.fitBounds(layer.getBounds(), { padding: [12, 12], animate: false });
-    if (feats.length < byCode.size) note(`Communes : ${byCode.size - feats.length} code(s) INSEE sans contour`);
-  } catch (e) { note(`Contours des communes indisponibles (${e.message || e})`); }
+    if (scale?.items.length) {
+      const c = L.control({ position: "topright" });
+      c.onAdd = () => {
+        const d = L.DomUtil.create("div", "map-legend");
+        d.innerHTML = `<b>${mode === "epci" ? "EPCI" : "Communes"} : ${how === "sum" && sumC ? esc(sumC.label || sumC.colId) : "nombre de points"}</b>`
+          + scale.items.map(([t, col]) => `<div><i style="background:${esc(col)};border-radius:2px"></i>${esc(t)}</div>`).join("");
+        L.DomEvent.disableScrollPropagation(d); return d;
+      };
+      c.addTo(map);
+    }
+    const missing = [...byCode.keys()].filter((c) => !all.some((f) => codeOf(f) === c)).length;
+    if (missing) note(`Zonage : ${missing} code(s) INSEE sans contour`);
+  } catch (e) { note(`Contours indisponibles (${e.message || e})`); }
 }
 async function renderMap(info, rows, body, jobs, selId, b = {}) {
   const spec = mapSpec(info.sec);
@@ -1607,9 +1712,12 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
   const latC = find(spec.lat, /^lat/i), lngC = find(spec.lng, /^(lon|lng)/i), nameC = (b.mapLabel && cols.find((c) => c.colId === b.mapLabel)) || find(spec.name, /^(nom|name|libell)/i);
   if (!latC || !lngC) { body.innerHTML = '<div class="msg">Carte : colonnes Latitude / Longitude introuvables</div>'; return; }
   const colorC = b.mapColor ? cols.find((c) => c.colId === b.mapColor) : null;
-  const ringC = b.mapRing ? cols.find((c) => c.colId === b.mapRing) : null;   // contour du point, couleurs choisies
+  const sumC = b.zoneColor === "sum" && b.zoneSum ? cols.find((c) => c.colId === b.zoneSum) : null;
+  const qpvRing = b.mapRing === "__qpv";   // contour calculé : situation par rapport aux QPV
+  const qpvDist = Number(b.qpvDist ?? 300) || 0;
+  const ringC = b.mapRing && !qpvRing ? cols.find((c) => c.colId === b.mapRing) : null;   // contour du point, couleurs choisies
   const ringRules = ringC ? (b.mapRules || []).filter((r) => r && r.v !== undefined) : [];
-  const comC = b.mapCommunes ? ((b.mapCommune && cols.find((c) => c.colId === b.mapCommune)) || cols.find((c) => /insee|code.?com|cog|depcom/i.test(c.colId))
+  const comC = zoneMode(b) ? ((b.mapCommune && cols.find((c) => c.colId === b.mapCommune)) || cols.find((c) => /insee|code.?com|cog|depcom/i.test(c.colId))
     || cols.find((c) => /^commune/i.test(c.colId) && ["Ref", "RefList"].includes(baseType(c)))) : null;
   await ensureRefTables([nameC, colorC, comC, ringC].filter(Boolean));
   const ringOpts = ringC ? parseJSON(ringC.widgetOptions) : null;
@@ -1617,7 +1725,7 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
   const pts = rows.map((r) => {
     const ll = toLatLng(toNum(r[latC.colId]), toNum(r[lngC.colId]));
     return ll && { id: r.id, lat: ll[0], lng: ll[1], name: nameC ? textOf(nameC, parseJSON(nameC.widgetOptions), r[nameC.colId]) : "",
-      cv: colorC ? r[colorC.colId] : null, rv: ringC ? r[ringC.colId] : null, code: comC ? communeCode(comC, r[comC.colId]) : null };
+      cv: colorC ? r[colorC.colId] : null, rv: ringC ? r[ringC.colId] : null, sv: sumC ? toNum(r[sumC.colId]) : null, code: comC ? communeCode(comC, r[comC.colId]) : null };
   }).filter(Boolean);
   const legend = colorC ? mapColorScale(colorC, colorOpts, pts) : null;
   const ring = ringRules.length ? mapRuleScale(ringC, ringOpts, pts.map((p) => ({ cv: p.rv })), ringRules) : null;
@@ -1631,7 +1739,10 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
   const key = pts.map((p) => p.id).join(",");
   jobs.push(async () => {
     try {
-    await Promise.all([loadLeaflet(), pts.some((p) => looksHtml(p.name)) ? loadPurify() : null]);
+    let qpv = null, qpvErr = "";
+    await Promise.all([loadLeaflet(), pts.some((p) => looksHtml(p.name)) ? loadPurify() : null,
+      (b.mapQpv || qpvRing) ? loadQpv(b.qpvUrl).then((q) => { qpv = q; }, (e) => { qpvErr = e.message || String(e); }) : null]);
+    if (qpv) for (const p of pts) p.qpv = qpvLocate(qpv, p.lat, p.lng, qpvDist);
     const map = L.map(el, { zoomControl: true, attributionControl: true }).setView([pts[0].lat, pts[0].lng], 11);   // vue initiale sûre
     S.maps.push(map);
     L.tileLayer(spec.tiles, { attribution: spec.attribution, maxZoom: 19 }).addTo(map);
@@ -1644,11 +1755,12 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
     const style = (on, fill, rc) => (rc ? { ...style0(on, fill), color: rc, weight: on ? 4 : 3, radius: on ? 10 : 7, opacity: 1 } : style0(on, fill));
     for (const p of pts) {
       p.fill = legend ? legend.colorOf(p.cv) : null;
-      p.ring = ringOf(p.rv);
+      p.ring = qpvRing ? (p.qpv ? (p.qpv.d ? QPV_NEAR : QPV_IN) : null) : ringOf(p.rv);
       const m = L.circleMarker([p.lat, p.lng], style(p.id === selId, p.fill, p.ring)).addTo(map);
       // Leaflet interprète les étiquettes comme du HTML : HTML nettoyé (popup au clic, comme la carte native), sinon texte échappé
-      if (p.name && looksHtml(p.name) && !b.mapLabelsOn) m.bindPopup(safeHtml(p.name), { maxWidth: 420 });
-      else if (p.name) m.bindTooltip(looksHtml(p.name) ? safeHtml(p.name) : esc(p.name), { direction: "top", offset: [0, -6], permanent: !!b.mapLabelsOn, className: b.mapLabelsOn ? "lbl" : "" });
+      const qx = p.qpv ? `<div class="qpvinfo">${esc(qpvText(p.qpv))}</div>` : "";
+      if (p.name && looksHtml(p.name) && !b.mapLabelsOn) m.bindPopup(safeHtml(p.name) + qx, { maxWidth: 420 });
+      else if (p.name || qx) m.bindTooltip((looksHtml(p.name) ? safeHtml(p.name) : esc(p.name)) + (b.mapLabelsOn ? "" : qx), { direction: "top", offset: [0, -6], permanent: !!b.mapLabelsOn, className: b.mapLabelsOn ? "lbl" : "" });
       m.on("click", () => {
         S.sel[info.secId] = p.id;
         if (hasRenderedDependents(info.secId)) scheduleRender();
@@ -1658,15 +1770,25 @@ async function renderMap(info, rows, body, jobs, selId, b = {}) {
       markers.set(p.id, m);
     }
     const saved = S.mapViews[info.secId];
-    if (b.mapCommunes) drawCommunes(map, pts, comC, saved && saved.key === key);
-    const ringItems = (ring?.items || []).filter(([t]) => t !== "Autres");
+    if (zoneMode(b)) drawZones(map, pts, comC, saved && saved.key === key, b, sumC);
+    if (qpvErr) { const c = L.control({ position: "topright" }); c.onAdd = () => { const d = L.DomUtil.create("div", "map-legend"); d.textContent = `QPV : ${qpvErr}`; return d; }; c.addTo(map); }
+    if (qpv && b.mapQpv) {
+      if (!map.getPane("qpv")) map.createPane("qpv").style.zIndex = 360;   // au-dessus des zones, sous les points
+      const nIn = (pr) => pts.filter((p) => p.qpv && p.qpv.props === pr).length;
+      L.geoJSON(qpv.fc, { pane: "qpv", style: { color: QPV_IN, weight: 1.5, dashArray: "4 3", fillColor: QPV_IN, fillOpacity: 0.12 },
+        onEachFeature: (f, l) => { const pr = qpv.polys.find((P) => P.props.code_qp === f.properties?.code_qp)?.props || f.properties || {};
+          l.bindTooltip(`<b>QPV ${esc(pr.lib_qp || pr.code_qp || "")}</b><br>${esc(pr.lib_com || "")} · ${esc(pr.code_qp || "")}<br>${nIn(pr)} point(s) dedans ou à proximité`, { sticky: true }); } }).addTo(map);
+    }
+    const nQ = pts.filter((p) => p.qpv && !p.qpv.d).length, nN = pts.filter((p) => p.qpv && p.qpv.d).length;
+    const ringItems = qpvRing ? [[`Dans un QPV (${nQ})`, QPV_IN], ...(qpvDist ? [[`À moins de ${qpvDist} m (${nN})`, QPV_NEAR]] : [])]
+      : (ring?.items || []).filter(([t]) => t !== "Autres");
     if (legend?.items.length || ringItems.length) {
       const ctl = L.control({ position: "bottomleft" });
       ctl.onAdd = () => {
         const d = L.DomUtil.create("div", "map-legend");
         d.innerHTML = (legend?.items.length ? `<b>${esc(colorC.label || colorC.colId)}</b>` + legend.items.map(([t, c]) =>
           `<div><i style="background:${esc(c)}"></i>${esc(t)}</div>`).join("") : "")
-          + (ringItems.length ? `<b${legend?.items.length ? ' style="margin-top:4px"' : ""}>Contour : ${esc(ringC.label || ringC.colId)}</b>` + ringItems.map(([t, c]) =>
+          + (ringItems.length ? `<b${legend?.items.length ? ' style="margin-top:4px"' : ""}>Contour : ${esc(qpvRing ? "quartiers prioritaires" : ringC.label || ringC.colId)}</b>` + ringItems.map(([t, c]) =>
           `<div><i style="background:transparent;border:3px solid ${esc(c)};box-shadow:none"></i>${esc(t)}</div>`).join("") : "");
         L.DomEvent.disableScrollPropagation(d);
         return d;
@@ -2427,10 +2549,15 @@ function renderConfig() {
         ${C(`data-asel="${i}"`, isSelector(b), "Liste de sélection", "Affiche cette vue sous forme de liste déroulante dans l'en-tête : choisir une valeur pilote les blocs liés, comme un sélecteur.")}
         ${isMap ? L("Étiquette", sel("mapLabel", [["", `auto (${esc(colByKey(m.colsByTable.get(s.tableRef) || [], mapSpec(s).name)?.colId || "aucune")})`], ...colOpts(s)], b.mapLabel || ""), "Colonne affichée au survol ou au clic sur un point. « auto » reprend la colonne « Name » de la carte Grist.")
           + L("Couleur selon", sel("mapColor", [["", "aucune"], ...colOpts(s)], b.mapColor || ""), "Colore les points selon la valeur d'une colonne (une couleur par valeur, ou des classes pour un nombre). Les valeurs invalides sont en rouge.")
-          + L("Contour selon", sel("mapRing", [["", "aucun"], ...colOpts(s)], b.mapRing || ""), "Colore le cercle qui entoure chaque point selon la valeur d'une colonne, avec les couleurs que vous choisissez (3 au plus). Le remplissage du point reste celui de « Couleur selon ».")
-          + (b.mapRing ? mapRulesHtml(b, i, s) : "")
-          + C(`data-mcom="${i}"`, b.mapCommunes, "Tracer les communes", "Dessine le contour des communes contenant des points (geo.api.gouv.fr), dans la couleur majoritaire de leurs points.")
-          + (b.mapCommunes ? L("Code INSEE", sel("mapCommune", [["", "auto"], ...colOpts(s)], b.mapCommune || ""), "Colonne donnant le code INSEE de la commune (ou une référence vers la table des communes).") : "")
+          + L("Contour selon", sel("mapRing", [["", "aucun"], ["__qpv", "situation QPV (calculée)"], ...colOpts(s)], b.mapRing || ""), "Colore le cercle qui entoure chaque point selon la valeur d'une colonne, avec les couleurs que vous choisissez (3 au plus). Le remplissage du point reste celui de « Couleur selon ».")
+          + (b.mapRing && b.mapRing !== "__qpv" ? mapRulesHtml(b, i, s) : "")
+          + C(`data-mqpv="${i}"`, b.mapQpv, "Quartiers prioritaires (QPV)", "Dessine les périmètres des QPV 2024 (ANCT) en pointillés rouges. Avec « Contour selon : situation QPV », les points situés dans un QPV sont cerclés de rouge, ceux à proximité d'orange.")
+          + (b.mapQpv || b.mapRing === "__qpv" ? L("Proximité d'un QPV", sel("qpvDist", [[0, "dans le quartier seulement"], [100, "100 m"], [200, "200 m"], [300, "300 m"], [500, "500 m"]], b.qpvDist ?? 300), "Distance en deçà de laquelle un point hors QPV est signalé comme proche (contour orange, infobulle).")
+            + L("Fichier des QPV", `<input type="text" data-qpvurl="${i}" value="${esc(b.qpvUrl || "")}" placeholder="${QPV_DEFAULT}" style="width:200px">`, "Fichier GeoJSON (WGS84) des périmètres, placé à côté du widget sur GitHub. Vide : qpv-bretagne.geojson. Une adresse complète https://… est aussi acceptée.") : "")
+          + L("Zonage", sel("mapZone", [["", "aucun"], ["communes", "communes"], ["epci", "EPCI (intercommunalités)"]], zoneMode(b)), "Dessine sous les points les communes qui en contiennent, ou les EPCI entiers (contours geo.api.gouv.fr, EPCI obtenus en fusionnant leurs communes).")
+          + (zoneMode(b) ? L("Couleur des zones", sel("zoneColor", [["", zoneMode(b) === "epci" ? "une couleur par EPCI" : "couleur majoritaire des points"], ["count", "selon le nombre de points"], ["sum", "selon la somme d'une colonne"]], b.zoneColor || ""), "Dégradé de bleus en 5 classes (quantiles) selon le nombre de points de chaque zone, ou la somme d'une colonne numérique (effectifs…).") : "")
+          + (zoneMode(b) && b.zoneColor === "sum" ? L("Colonne à additionner", sel("zoneSum", [["", "—"], ...(m.colsByTable.get(s.tableRef) || []).filter((c) => ["Numeric", "Int"].includes(baseType(c))).map((c) => [c.colId, esc(c.label || c.colId)])], b.zoneSum || ""), "Colonne numérique additionnée pour chaque zone (par exemple l'effectif des écoles).") : "")
+          + (zoneMode(b) ? L("Code INSEE", sel("mapCommune", [["", "auto"], ...colOpts(s)], b.mapCommune || ""), "Colonne donnant le code INSEE de la commune (ou une référence vers la table des communes).") : "")
           + C(`data-mlbl="${i}"`, b.mapLabelsOn, "Étiquettes toujours visibles", "Affiche l'étiquette de chaque point en permanence, au lieu de la montrer au survol.") : ""}
         ${isSelector(b) ? L("Colonne affichée", sel("selCol", [["", "auto"], ...colOpts(s)], b.selCol || ""), "Colonne dont les valeurs apparaissent dans la liste déroulante.")
           + L("Ordre", sel("selOrder", [["", "alphabétique"], ["vue", "celui de la vue Grist"]], b.selOrder || ""), "Ordre des valeurs dans la liste.")
@@ -2502,7 +2629,8 @@ $("#panel").addEventListener("change", (ev) => {
     else draft.blocks = draft.blocks.filter((b) => b.id !== id);
     renderConfig(); return;
   }
-  if (t.dataset.f) { const b = draft.blocks[Number(t.dataset.i)]; b[t.dataset.f] = ["height", "selCol", "selGroup", "selOrder", "mapLabel", "mapColor", "mapRing", "mapCommune", "cardW", "colWidths", "startFold"].includes(t.dataset.f) ? t.value : Number(t.value) || 0; renderConfig(); return; }
+  if (t.dataset.f === "mapZone") draft.blocks[Number(t.dataset.i)].mapCommunes = false;   // ancienne option remplacée par « Zonage »
+  if (t.dataset.f) { const b = draft.blocks[Number(t.dataset.i)]; b[t.dataset.f] = ["height", "selCol", "selGroup", "selOrder", "mapLabel", "mapColor", "mapRing", "qpvDist", "mapCommune", "mapZone", "zoneColor", "zoneSum", "cardW", "colWidths", "startFold"].includes(t.dataset.f) ? t.value : Number(t.value) || 0; renderConfig(); return; }
   if (t.dataset.sync) { draft.blocks[Number(t.dataset.sync)].syncId = t.value.trim(); return; }
   if (t.id === "cMnUrl") { draftNav.url = t.value.trim(); return; }
   if (t.id === "cMnSingle") { draftNav.singlePage = t.checked; return; }
@@ -2517,6 +2645,8 @@ $("#panel").addEventListener("change", (ev) => {
   if (t.dataset.sempty) { draft.blocks[Number(t.dataset.sempty)].showEmpty = t.checked; return; }
   if (t.dataset.mcom) { draft.blocks[Number(t.dataset.mcom)].mapCommunes = t.checked; renderConfig(); return; }
   if (t.dataset.mr) { const [i, k, f] = t.dataset.mr.split(":"); draft.blocks[Number(i)].mapRules[Number(k)][f] = t.value; return; }
+  if (t.dataset.mqpv) { draft.blocks[Number(t.dataset.mqpv)].mapQpv = t.checked; renderConfig(); return; }
+  if (t.dataset.qpvurl) { draft.blocks[Number(t.dataset.qpvurl)].qpvUrl = t.value.trim(); return; }
   if (t.dataset.mlbl) { draft.blocks[Number(t.dataset.mlbl)].mapLabelsOn = t.checked; return; }
   if (t.dataset.asel) { draft.blocks[Number(t.dataset.asel)].asSelect = t.checked; renderConfig(); return; }
   if (t.dataset.nl) { draft.blocks[Number(t.dataset.nl)].newLine = t.checked; renderConfig(); return; }
