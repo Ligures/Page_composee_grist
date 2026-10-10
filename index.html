@@ -6344,7 +6344,7 @@
         .map(
           (x, i) => `<div class="mn">
         <input type="text" data-mnlabel="${i}" value="${esc(x.label || "")}" placeholder="Libellé" title="Texte du lien dans le menu (vide : nom de la page)" style="width:120px">
-        <select data-mnview="${i}" title="Page Grist ouverte par ce lien">${m.pages.map((pg) => `<option value="${pg.viewId}" ${pg.viewId === x.viewId ? "selected" : ""}>${esc(pg.name)}</option>`).join("")}</select>
+        <select data-mnview="${i}" title="Page Grist ouverte par ce lien. En mode « Changer de page dans le widget », elle est facultative : le lien affiche simplement la configuration choisie.">${draftNav.inWidget ? `<option value="0" ${!m.pages.some((pg) => pg.viewId === x.viewId) ? "selected" : ""}>— ce widget —</option>` : ""}${m.pages.map((pg) => `<option value="${pg.viewId}" ${pg.viewId === x.viewId ? "selected" : ""}>${esc(pg.name)}</option>`).join("")}</select>
         <select data-mncfg="${i}" title="Configuration affichée sur cette page (sert à surligner la page courante et au changement de page dans le widget)"><option value="">— config —</option>${(
           S.stored || []
         )
@@ -6359,8 +6359,8 @@
               `<option value="${esc(t.tableId)}" ${t.tableId === x.needTable ? "selected" : ""}>si accès à ${esc(t.tableId)}</option>`,
           )
           .join("")}</select>
-        ${m.pages.some((pg) => pg.viewId === x.viewId) ? "" : `<span style="color:var(--rouge)">page introuvable (n°${x.viewId})</span>`}
-        <small style="color:var(--muet)">p/${x.viewId}</small>
+        ${m.pages.some((pg) => pg.viewId === x.viewId) || (draftNav.inWidget && x.cfg) ? "" : `<span style="color:var(--rouge)">${draftNav.inWidget ? "choisir une config" : `page introuvable (n°${x.viewId})`}</span>`}
+        ${m.pages.some((pg) => pg.viewId === x.viewId) ? `<small style="color:var(--muet)">p/${x.viewId}</small>` : ""}
         <button class="icon-btn" data-mnup="${i}" title="Monter">↑</button><button class="icon-btn" data-mndown="${i}" title="Descendre">↓</button><button class="icon-btn" data-mnrm="${i}" title="Retirer du menu">✕</button>
       </div>`,
         )
@@ -6430,6 +6430,7 @@
         }
         if (t.id === "cMnInWidget") {
           draftNav.inWidget = t.checked;
+          renderConfig(); // la page Grist devient facultative (option « ce widget »)
           return;
         }
         if (t.dataset.mnlabel) {
@@ -6559,7 +6560,7 @@
           renderConfig();
         };
         if (t.id === "cMnAdd") {
-          draftNav.items.push({ label: "", viewId: S.meta.pages[0]?.viewId || 0, cfg: draft.name || "" });
+          draftNav.items.push({ label: "", viewId: draftNav.inWidget ? 0 : S.meta.pages[0]?.viewId || 0, cfg: draft.name || "" });
           return renderConfig();
         }
         if (t.dataset.mnup) return mv(Number(t.dataset.mnup), -1);
@@ -6702,6 +6703,16 @@
         ev.preventDefault();
         switchConfig(a.dataset.gocfg);
       });
+      // cfgReadable — Une configuration est-elle lisible ? (au moins une table de ses blocs accessible à l'utilisateur)
+      function cfgReadable(name) {
+        const c = (S.stored || []).find((x) => x.name === name)?.cfg,
+          m = S.meta;
+        if (!c || !m || !c.blocks?.length) return true;
+        return c.blocks.some((b) => {
+          const id = m.tables.get(m.sections.get(b.id)?.tableRef)?.tableId;
+          return !!id && (!m.visibleTables || m.visibleTables.has(id));
+        });
+      }
       /* Une page du menu n'est proposée que si l'utilisateur peut lire au moins une table de ses vues (comme Grist) */
       function viewReadable(vid) {
         const m = S.meta;
@@ -6742,11 +6753,17 @@
           ).then(() => renderNav());
         }
         nav.innerHTML = n.items
-          .filter((x) => x.viewId && viewReadable(x.viewId) && (!x.needTable || S.navAccess[x.needTable]))
-          .map(
-            (x) =>
-              `<a href="${safeBase(n.url) ? esc(pageUrl(safeBase(n.url), x.viewId, n.singlePage)) : "#"}" title="${safeBase(n.url) ? esc(pageUrl(safeBase(n.url), x.viewId, n.singlePage)) : ""}" target="_top"${n.inWidget && x.cfg ? ` data-gocfg="${esc(x.cfg)}"` : ""} class="${x.cfg && x.cfg === S.cfg.name ? "cur" : ""}">${esc(x.label || S.meta?.pageOfView.get(x.viewId) || "Page")}</a>`,
-          )
+          .filter((x) => {
+            const page = !!x.viewId && !!S.meta?.pageOfView.has(x.viewId); // la page Grist existe encore
+            if (!page && !(n.inWidget && x.cfg)) return false; // ni page, ni configuration à afficher dans le widget
+            if (x.needTable && !S.navAccess[x.needTable]) return false;
+            return page ? viewReadable(x.viewId) : cfgReadable(x.cfg);
+          })
+          .map((x) => {
+            const page = !!x.viewId && !!S.meta?.pageOfView.has(x.viewId);
+            const url = page && safeBase(n.url) ? pageUrl(safeBase(n.url), x.viewId, n.singlePage) : ""; // lien Grist (clic du milieu)
+            return `<a href="${url ? esc(url) : "#"}" title="${esc(url)}" target="_top"${n.inWidget && x.cfg ? ` data-gocfg="${esc(x.cfg)}"` : ""} class="${x.cfg && x.cfg === S.cfg.name ? "cur" : ""}">${esc(x.label || (page ? S.meta.pageOfView.get(x.viewId) : x.cfg) || "Page")}</a>`;
+          })
           .join("");
       }
       // readStoredConfigs — Lit toutes les configurations enregistrées dans W_Composition.
