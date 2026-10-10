@@ -322,8 +322,36 @@
         margin: 0 0 14px;
         padding: 0;
       }
-      #filters:empty {
+      #filters:empty,
+      #filters:not(:has(label:not(.solo))) {
         display: none;
+      }
+      #filters label.solo {
+        display: none;
+      }
+      /* smartphone : toutes les listes sur une seule ligne, sans libellé (repris en infobulle et pour les lecteurs d'écran) */
+      @media (max-width: 760px) {
+        #filters {
+          flex-wrap: nowrap;
+          gap: 6px;
+          margin-bottom: 8px;
+        }
+        #filters label {
+          flex: 1 1 0;
+          min-width: 0;
+        }
+        #filters label .fl {
+          display: none;
+        }
+        #filters select {
+          min-width: 0;
+          width: 100%;
+          font-size: 13px;
+          padding: 5px 24px 5px 8px;
+          background-position: calc(100% - 6px) 50%;
+          background-size: 14px 14px;
+          text-overflow: ellipsis;
+        }
       }
       /* Listes au style DSFR (fr-label / fr-select) */
       #filters label {
@@ -4777,8 +4805,12 @@
               }
               if (last !== null) inner += "</optgroup>";
             } else inner = items.map(opt).join("");
+            // une seule entrée possible (selon les droits) : la liste est masquée, mais sa sélection s'applique
+            // et reste lisible à l'impression (selectionSummary lit aussi les listes masquées)
+            const solo = items.length <= 1;
+            const cap = esc(info.title);
             parts.push(
-              `<label>${esc(info.title)}<select data-selector="${b.id}">${inner || "<option>(aucun choix)</option>"}</select></label>`,
+              `<label class="${solo ? "solo" : ""}" title="${cap}"><span class="fl">${cap}</span><select data-selector="${b.id}" aria-label="${cap}">${inner || "<option>(aucun choix)</option>"}</select></label>`,
             );
           } catch (e) {
             parts.push(`<label>${esc(info?.title || "")}<span class="msg err">${esc(e.message || e)}</span></label>`);
@@ -5044,7 +5076,8 @@
               if (info.kind === "record") rows = applyUserView(info, rows); // tri et filtres choisis dans les en-têtes
               const qc = qfCol(b, info);
               if (qc) await ensureRefTables([qc]); // champ du filtre rapide de type référence : texte affiché
-              const qfCtl = qfHtml(b, info, rows); // filtre rapide : sélecteur calculé sur toutes les lignes…
+              const before = rows.length; // lignes avant le filtre rapide
+              const qfCtl = before ? qfHtml(b, info, rows) : ""; // filtre rapide : sélecteur calculé sur toutes les lignes…
               rows = qfApply(b, info, rows); // …puis seules les lignes choisies sont affichées
               const selId = await selectedRowId(b.id, ctx);
               const isSingle = info.kind === "single";
@@ -5065,7 +5098,9 @@
                 } catch {
                   /* diagnostic facultatif */
                 }
-                if (S.cfg.hideEmptyBlocks && !qfCur(b)) {
+                // bloc masqué s'il n'a aucune donnée ; il reste affiché seulement si c'est le filtre rapide qui l'a vidé
+                // (pour pouvoir revenir à « Tous »)
+                if (S.cfg.hideEmptyBlocks && !(before && qfCur(b))) {
                   skipped.empty.push(info.title);
                   continue;
                 }
