@@ -527,6 +527,7 @@
           position: static !important;
           max-height: none !important;
           overflow: hidden !important;
+          box-shadow: none !important;
         }
       }
 
@@ -705,7 +706,28 @@
         align-self: start !important;
         z-index: 2;
         max-height: calc(100vh - var(--toph, 0px) - 14px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        /* un liseré blanc comble les espaces entre blocs figés et sous l'en-tête : le contenu qui défile
+           dessous n'apparaît plus par ces interstices ; une ombre légère marque la limite basse */
+        box-shadow:
+          0 -8px 0 #fff,
+          0 8px 0 #fff,
+          0 14px 10px -8px rgba(0, 0, 0, 0.18);
+      }
+      /* dans un bloc figé de hauteur limitée, c'est le tableau (ou le contenu) qui défile, pas le bloc :
+         les en-têtes de colonnes restent ainsi visibles */
+      .block.sticky > .bb {
+        flex: 1 1 auto;
+        min-height: 0;
         overflow: auto;
+        display: flex;
+        flex-direction: column;
+      }
+      .block.sticky > .bb > .tbl-wrap {
+        flex: 1 1 auto;
+        min-height: 0;
       }
       .block.collapsed > .bb {
         display: none !important;
@@ -766,6 +788,7 @@
       }
       .block.tall > .bb > .tbl-wrap {
         flex: 1 1 auto;
+        min-height: 0; /* le tableau défile lui-même : en-têtes de colonnes figés */
         max-height: none !important;
       }
       /* Plein écran d'un bloc */
@@ -824,6 +847,7 @@
       }
       .block.maxed > .bb > .tbl-wrap {
         flex: 1 1 auto;
+        min-height: 0; /* le tableau défile lui-même : en-têtes de colonnes figés */
         max-height: none !important;
       }
       .block.maxed td {
