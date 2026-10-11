@@ -15,6 +15,22 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.8] — Nouvelle page sans toucher à la page affichée — 2026-10-11
+
+### Ajouté
+- Configuration, section Général : **Page réglée** permet de régler n'importe quelle page enregistrée sans changer celle qui est affichée.
+- Boutons **＋ Nouvelle page** (page vide) et **Dupliquer** (à partir de la page en cours de réglage).
+- Encadré signalant qu'on règle une autre page que celle affichée, avec deux options : l'afficher dans ce widget après l'enregistrement, l'ajouter au menu de navigation.
+- Le nom de la page réglée apparaît dans le titre du panneau.
+- **Liens vers des formulaires Grist** (facultatifs, par page) : section Général, « + Ajouter un lien vers un formulaire » (libellé et adresse). Chaque lien devient un bouton dans l'en-tête, à gauche du menu, qui ouvre le formulaire dans un nouvel onglet. Seules les adresses https sont acceptées. Un **commentaire au survol** facultatif s'affiche dans une infobulle sur le bouton.
+
+### Modifié
+- « Nom de la configuration » devient **Nom de la page**. Enregistrer sous le nom d'une autre page demande confirmation au lieu de la remplacer sans prévenir.
+- Changer de page réglée, ou en créer une, demande confirmation si des modifications n'ont pas été enregistrées.
+- Le bouton « Charger » et la liste « Reprendre une configuration enregistrée » sont remplacés par « Page réglée ».
+
+---
+
 ## [0.8.7] — Blocs figés empilés — 2026-10-11
 
 ### Corrigé
@@ -23,6 +39,8 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 - **Manque de place** : un bloc figé qui n'a plus la place de montrer son en-tête n'est plus figé. Il passe alors sous les blocs figés au lieu de les recouvrir.
 - **Interstices comblés** : un liseré blanc entre les blocs figés, et sous l'en-tête, masque le contenu qui défile dessous. Une ombre légère marque la limite basse des blocs figés.
 - **En-têtes de colonnes toujours visibles** quand on fait défiler un tableau dans son cadre, y compris dans un bloc figé, un bloc sur plusieurs rangées ou en plein écran.
+- **Blocs figés côte à côte de hauteurs différentes** : un bloc qui défilait dessous passait derrière le plus haut mais restait visible sous le plus court. Un masque blanc couvre désormais toute la largeur des blocs figés voisins, jusqu'au bas du plus haut.
+- **Tableau dans un bloc de 2 ou 3 rangées** : il s'affichait en entier et c'est la page qui défilait, en emportant les en-têtes. Sa hauteur maximale est désormais celle d'une rangée multipliée par le nombre de rangées, et il défile dans son cadre.
 
 ---
 
