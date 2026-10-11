@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.8)                 ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.9)                 ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -38,8 +38,7 @@
         font-family: "Marianne";
         font-weight: 400;
         font-display: swap;
-        src: url("https://cdn.jsdelivr.net/gh/betagouv/beta.gouv.fr@master/assets/fonts/Marianne-Regular.woff")
-          format("woff");
+        src: url("https://cdn.jsdelivr.net/npm/@gouvfr/dsfr@1.14.4/dist/fonts/Marianne-Regular.woff2") format("woff2");
       }
       @font-face {
         font-family: "Marianne";
@@ -59,6 +58,16 @@
         --carte: #fff;
         --rouge: #ce0500;
         --gap: 10px;
+      }
+      /* Apparence « neutre » (0.8.9) : pour les structures qui ne sont pas des services de l'État, sans la police
+         Marianne ni le bleu France, réservés par les conditions d'utilisation du DSFR */
+      html.neutre {
+        --bleu: #1f4e8c;
+        --bleu-clair: #dde7f3;
+        --bleu-hover: #eef3f9;
+      }
+      html.neutre body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       }
       * {
         box-sizing: border-box;
@@ -111,6 +120,89 @@
         color: var(--bleu);
         border-bottom-color: var(--bleu);
         font-weight: 700;
+      }
+      /* liste des pages : en ligne sur grand écran, derrière un bouton sur smartphone */
+      #pnav .pnav-list {
+        display: contents;
+      }
+      #pnav .pnav-tog {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid var(--bord);
+        border-radius: 4px;
+        background: #fff;
+        color: var(--bleu);
+        font-size: 13px;
+        font-weight: 700;
+        max-width: 70vw;
+      }
+      #pnav .pnav-tog span:first-of-type {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #pnav .pnav-tog svg {
+        width: 16px;
+        height: 16px;
+        flex: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linejoin: round;
+      }
+      @media (max-width: 760px) {
+        #pnav {
+          position: relative;
+          border-bottom: 0;
+          margin-bottom: 6px;
+        }
+        #pnav .pnav-tog {
+          display: inline-flex;
+          max-width: calc(100vw - var(--barw, 60px) - 32px); /* même rangée que le menu ☰ (sans titre) */
+        }
+        /* sans titre : bouton des pages à gauche et menu ☰ à droite, sur la même rangée */
+        #top.notitle:has(#pnav .pnav-tog) .bar {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          margin: 0;
+        }
+        #pnav.open .pnav-tog {
+          background: var(--bleu);
+          color: #fff;
+        }
+        #pnav .pnav-list {
+          display: none;
+        }
+        #pnav.open .pnav-list {
+          display: flex;
+          flex-direction: column;
+          position: absolute;
+          top: 36px;
+          left: 0;
+          z-index: 30;
+          min-width: 200px;
+          max-width: 90vw;
+          max-height: 70vh;
+          overflow: auto;
+          background: #fff;
+          border: 1px solid var(--bord);
+          border-radius: 4px;
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+        }
+        #pnav.open .pnav-list a {
+          border-bottom: 0;
+          border-left: 3px solid transparent;
+          margin: 0;
+          padding: 9px 12px;
+        }
+        #pnav.open .pnav-list a.cur {
+          border-left-color: var(--bleu);
+          background: var(--bleu-hover);
+        }
       }
       .mn {
         display: flex;
@@ -1110,6 +1202,76 @@
         align-items: center;
         justify-content: center;
         padding: 12px;
+      }
+      /* choix de l'apparence (installation) */
+      #themeAsk {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+      }
+      #themeAsk .tbox {
+        background: #fff;
+        border-radius: 8px;
+        max-width: 640px;
+        width: 100%;
+        padding: 16px 18px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      }
+      #themeAsk h3 {
+        margin: 0 0 6px;
+        color: var(--bleu);
+      }
+      #themeAsk p {
+        margin: 0 0 12px;
+        color: var(--muet);
+      }
+      #themeAsk .tchoices {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      @media (max-width: 560px) {
+        #themeAsk .tchoices {
+          grid-template-columns: 1fr;
+        }
+      }
+      #themeAsk .tcard {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        text-align: left;
+        border: 2px solid var(--bord);
+        border-radius: 6px;
+        background: #fff;
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+      #themeAsk .tcard:hover {
+        border-color: currentColor;
+      }
+      #themeAsk .tcard.dsfr {
+        color: #000091;
+        font-family: "Marianne", Arial, sans-serif;
+      }
+      #themeAsk .tcard.neutre {
+        color: #1f4e8c;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      }
+      #themeAsk .tcard > b {
+        font-size: 15px;
+      }
+      #themeAsk .tcard span,
+      #themeAsk .tcard small {
+        color: #161616;
+      }
+      #themeAsk .tcard small {
+        color: var(--muet);
+        line-height: 1.35;
       }
       #fmodal {
         position: fixed;
@@ -2161,7 +2323,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.8"; // voir CHANGELOG.md
+      const VERSION = "0.8.9"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -2181,6 +2343,8 @@
       };
       const SUPPORTED = ["record", "single", "detail", "chart", "custom"];
       const DEFAULT_WIDTH = { record: 6, single: 2, detail: 6, chart: 3, custom: 3 };
+      // BRAND — couleur principale des graphiques et cartes : bleu France (DSFR) ou bleu neutre (voir applyTheme)
+      const BRAND = { c: "#000091" };
       const PALETTE = [
         "#000091",
         "#009081",
@@ -4619,10 +4783,10 @@
               : r.v
             : `${(RULE_OPS.find((o) => o[0] === r.op) || ["", r.op])[1]} ${r.v}`);
         const colorOf = (v) => {
-          for (const r of rules) if (ruleTest(r, col, opts, v)) return r.c || "#000091";
+          for (const r of rules) if (ruleTest(r, col, opts, v)) return r.c || BRAND.c;
           return OTHER;
         };
-        const items = rules.map((r) => [lbl(r), r.c || "#000091"]);
+        const items = rules.map((r) => [lbl(r), r.c || BRAND.c]);
         if (pts.some((p) => colorOf(p.cv) === OTHER && !rules.some((r) => (r.c || "").toUpperCase() === OTHER)))
           items.push(["Autres", OTHER]);
         return { colorOf, items };
@@ -4635,7 +4799,7 @@
           const vals = [...new Set(pts.map((p) => p.cv).filter((v) => typeof v === "number"))].sort((a, b) => a - b);
           if (vals.length > 7) {
             // 5 classes par quantiles, dégradé de bleus
-            const ramp = ["#dfe5fb", "#a8b8f0", "#6a83e0", "#2f4fc4", "#000091"];
+            const ramp = ["#dfe5fb", "#a8b8f0", "#6a83e0", "#2f4fc4", BRAND.c];
             const q = (k) => vals[Math.min(vals.length - 1, Math.floor((k * vals.length) / 5))];
             const cuts = [q(1), q(2), q(3), q(4)];
             const cls = (v) => cuts.filter((c) => v >= c).length;
@@ -4999,10 +5163,10 @@
           const majority = (z) => {
             const n = new Map();
             for (const p of z.pts) {
-              const c = p.fill || "#000091";
+              const c = p.fill || BRAND.c;
               n.set(c, (n.get(c) || 0) + 1);
             }
-            return [...n].sort((a, c) => c[1] - a[1])[0]?.[0] || "#000091";
+            return [...n].sort((a, c) => c[1] - a[1])[0]?.[0] || BRAND.c;
           };
           ordered.forEach((z, i) => {
             z.color = scale
@@ -5189,7 +5353,7 @@
                   : { radius: 6, color: "#fff", weight: 1.5, fillColor: fill, fillOpacity: 0.9 }
                 : on
                   ? { radius: 8, color: "#fff", weight: 2, fillColor: "#ce0500", fillOpacity: 1 }
-                  : { radius: 6, color: "#fff", weight: 1.5, fillColor: "#000091", fillOpacity: 0.85 };
+                  : { radius: 6, color: "#fff", weight: 1.5, fillColor: BRAND.c, fillOpacity: 0.85 };
             // contour coloré : cercle plus épais autour du point (sélection : point agrandi)
             const style = (on, fill, rc) =>
               rc
@@ -5616,6 +5780,7 @@
         }
         const my = (S.renderSeq = (S.renderSeq || 0) + 1); // un rendu plus récent annule celui-ci
         const stale = () => my !== S.renderSeq;
+        applyTheme(S.nav?.theme); // apparence DSFR ou neutre (peut changer à l'enregistrement de la configuration)
         $("#title").textContent = S.cfg.title || "";
         renderForms();
         const setNoTitle = () =>
@@ -7213,6 +7378,11 @@
       }
     </section>
     <section class="cs"><h4>4. Affichage</h4>
+      ${L(
+        "Apparence (tout le document)",
+        `<select id="cTheme"><option value="dsfr" ${draftNav.theme !== "neutre" ? "selected" : ""}>Style État (DSFR) — services de l'État</option><option value="neutre" ${draftNav.theme === "neutre" ? "selected" : ""}>Style neutre — autres structures</option></select>`,
+        "Style État : police Marianne et bleu France, réservés aux services de l'État par les conditions d'utilisation du DSFR. Style neutre : police du système et bleu neutre, pour toute autre structure. Commun à toutes les pages du document.",
+      )}
       ${C('id="cHideFields"', draft.hideEmptyFields, "Masquer les champs vides dans les fiches", "Les champs sans valeur ne sont pas affichés dans les fiches (sauf en édition, ou si le bloc demande à les afficher).")}
       ${C('id="cHideBlocks"', draft.hideEmptyBlocks, "Masquer les blocs sans données", "Un bloc sans aucune ligne à afficher (par exemple après filtrage) disparaît de la page.")}
       ${L("Hauteur des graphiques (px)", `<input type="number" id="cChartH" min="100" step="20" value="${draft.chartHeight || 260}" style="width:80px">`, "Hauteur par défaut des graphiques d'une ligne.")}
@@ -7403,6 +7573,7 @@
         if (t.id === "cTitle") draft.title = t.value;
         if (t.id === "cName") draft.name = t.value;
         if (t.id === "cShowAfter") draftShowAfter = t.checked;
+        if (t.id === "cTheme") draftNav.theme = t.value;
         if (t.dataset.fml) draft.forms[Number(t.dataset.fml)].label = t.value.trim();
         if (t.dataset.fmt) draft.forms[Number(t.dataset.fmt)].tip = t.value.trim();
         if (t.dataset.fmtab) draft.forms[Number(t.dataset.fmtab)].tab = t.checked;
@@ -7555,6 +7726,56 @@
       /* Sauvegarde durable de la configuration dans une table */
       const CFG_TABLE = "W_Composition";
       const NAV_NAME = "_Navigation";
+      /* ---------- Apparence : DSFR (services de l'État) ou neutre ----------
+         Choix commun au document, rangé avec le menu commun (ligne _Navigation de W_Composition, nav.theme).
+         Non choisi : apparence DSFR (comportement antérieur) et, pour un administrateur, proposition du choix. */
+      const NEUTRAL_BLUE = "#1f4e8c";
+      function applyTheme(theme) {
+        const neutre = theme === "neutre";
+        document.documentElement.classList.toggle("neutre", neutre);
+        BRAND.c = neutre ? NEUTRAL_BLUE : "#000091";
+        PALETTE[0] = MAP_COLORS[0] = BRAND.c;
+      }
+      // askTheme — Fenêtre de choix de l'apparence (installation du widget, ou bouton de la configuration).
+      function askTheme() {
+        return new Promise((resolve) => {
+          const d = document.createElement("div");
+          d.id = "themeAsk";
+          d.setAttribute("role", "dialog");
+          d.setAttribute("aria-modal", "true");
+          d.innerHTML = `<div class="tbox">
+            <h3>Apparence du widget</h3>
+            <p>Choisissez le style de ce document. Il s'applique à toutes les pages et se modifie ensuite dans la configuration (section Affichage).</p>
+            <div class="tchoices">
+              <button type="button" data-theme="dsfr" class="tcard dsfr"><b>Style État (DSFR)</b>
+                <span>Police Marianne, bleu France.</span>
+                <small>Réservé aux <b>services de l'État</b> : le Système de design de l'État et la police Marianne sont soumis à leurs propres <a href="https://www.systeme-de-design.gouv.fr/composants-et-modeles" target="_blank" rel="noopener noreferrer">conditions d'utilisation</a>, qui en interdisent l'usage par d'autres structures.</small></button>
+              <button type="button" data-theme="neutre" class="tcard neutre"><b>Style neutre</b>
+                <span>Police du système, bleu neutre.</span>
+                <small>Pour toute autre structure : collectivité, association, entreprise… Mêmes fonctions, sans l'identité visuelle de l'État.</small></button>
+            </div></div>`;
+          document.body.append(d);
+          d.addEventListener("click", (e) => {
+            if (e.target.closest("a")) return; // lien vers les conditions d'utilisation
+            const b = e.target.closest("[data-theme]");
+            if (!b) return;
+            d.remove();
+            resolve(b.dataset.theme);
+          });
+        });
+      }
+      // firstTheme — Première ouverture par un administrateur : choix de l'apparence, enregistré pour tout le document.
+      async function firstTheme() {
+        const t = await askTheme();
+        S.nav = { ...(S.nav || { url: "", items: [] }), theme: t };
+        applyTheme(t);
+        try {
+          await saveConfigToTable({ name: NAV_NAME, nav: S.nav });
+        } catch {
+          /* droits insuffisants : le choix vaut pour cette session */
+        }
+        scheduleRender();
+      }
       // readNav — Lit le menu de navigation commun (ligne _Navigation de W_Composition).
       async function readNav() {
         try {
@@ -7567,6 +7788,7 @@
             singlePage: !!n.singlePage,
             inWidget: !!n.inWidget,
             items: Array.isArray(n.items) ? n.items : [],
+            theme: n.theme === "neutre" || n.theme === "dsfr" ? n.theme : "", // "" : pas encore choisi
           };
         } catch {
           return { url: "", items: [] };
@@ -7639,6 +7861,8 @@
         scheduleRender();
       }
       $("#pnav").addEventListener("click", (ev) => {
+        if (ev.target.closest(".pnav-tog")) return pnavToggle();
+        if (ev.target.closest("a")) pnavToggle(false); // page choisie : la liste se referme
         const a = ev.target.closest("[data-gocfg]");
         if (!a || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button === 1) return; // clic normal : changement dans le widget
         ev.preventDefault();
@@ -7693,7 +7917,7 @@
             ),
           ).then(() => renderNav());
         }
-        nav.innerHTML = n.items
+        const links = n.items
           .filter((x) => {
             const page = !!x.viewId && !!S.meta?.pageOfView.has(x.viewId); // la page Grist existe encore
             if (!page && !(n.inWidget && x.cfg)) return false; // ni page, ni configuration à afficher dans le widget
@@ -7704,9 +7928,24 @@
             const page = !!x.viewId && !!S.meta?.pageOfView.has(x.viewId);
             const url = page && safeBase(n.url) ? pageUrl(safeBase(n.url), x.viewId, n.singlePage) : ""; // lien Grist (clic du milieu)
             return `<a href="${url ? esc(url) : "#"}" title="${esc(url)}" target="_top"${n.inWidget && x.cfg ? ` data-gocfg="${esc(x.cfg)}"` : ""} class="${x.cfg && x.cfg === S.cfg.name ? "cur" : ""}">${esc(x.label || (page ? S.meta.pageOfView.get(x.viewId) : x.cfg) || "Page")}</a>`;
-          })
-          .join("");
+          });
+        if (!links.length) {
+          nav.replaceChildren();
+          return;
+        }
+        // sur smartphone, les pages sont regroupées derrière un bouton (à gauche, icône de pages et nom de la page
+        // courante) — distinct du menu ☰ des actions, à droite
+        const cur = /class="cur">([^<]*)<\/a>$/.exec(links.find((l) => l.includes('class="cur"')) || "")?.[1];
+        nav.innerHTML = `<button type="button" class="pnav-tog" aria-expanded="false" aria-controls="pnavList" title="Changer de page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h9l3 3v12H8zM4 7v14h12" /></svg><span>${cur || "Pages"}</span><span class="qf-caret">▾</span></button><span class="pnav-list" id="pnavList">${links.join("")}</span>`;
       }
+      // pnavToggle — Ouvre / ferme la liste des pages (smartphone).
+      function pnavToggle(open = !$("#pnav").classList.contains("open")) {
+        $("#pnav").classList.toggle("open", open);
+        $("#pnav .pnav-tog")?.setAttribute("aria-expanded", String(open));
+      }
+      document.addEventListener("mousedown", (e) => {
+        if ($("#pnav").classList.contains("open") && !e.target.closest("#pnav")) pnavToggle(false);
+      });
       // readStoredConfigs — Lit toutes les configurations enregistrées dans W_Composition.
       async function readStoredConfigs() {
         try {
@@ -7787,6 +8026,8 @@
           S.stored = await readStoredConfigs();
           S.nav = await readNav();
           S.isAdmin = await checkAdmin();
+          applyTheme(S.nav.theme);
+          if (S.isAdmin && !S.nav.theme) setTimeout(firstTheme, 500); // installation : choix de l'apparence
           $("#btnConfig").hidden = !S.isAdmin;
           $("#btnLayout").hidden = !S.isAdmin;
           try {
