@@ -3011,7 +3011,7 @@
       /* Blocs « figés à l'écran » : sans réglage, ils se colleraient tous au même endroit sous l'en-tête et se
          recouvriraient (un graphique figé glisserait sur la carte figée au-dessus). Chaque bloc figé se colle donc
          sous ceux, figés aussi, qui le précèdent dans la même colonne. Un bloc qui n'a plus la place de montrer son
-         en-tête et le début de son contenu n'est plus figé, et passe alors sous les blocs figés. */
+         en-tête n'est plus figé, et passe alors sous les blocs figés. */
       let stickyRO = null,
         stickyRaf = 0;
       // stackSticky — Calcule la position de collage (top) de chaque bloc figé, colonne par colonne.
@@ -3027,8 +3027,11 @@
             const r = el.getBoundingClientRect();
             const above = placed.filter((p) => p.l < r.right - 1 && p.r > r.left + 1); // même colonne (chevauchement horizontal)
             const top = above.reduce((t, p) => Math.max(t, p.top + p.h + gap), toph + 6);
-            // plus assez de place pour montrer au moins l'en-tête et le début du bloc : il n'est plus figé
-            const tooLow = top + Math.min(el.offsetHeight, 160) > window.innerHeight - 60;
+            // plus assez de place pour montrer au moins l'en-tête du bloc : il n'est plus figé. Sinon le bloc reste
+            // figé quelle que soit sa hauteur (déplié ou non) : max-height le limite à la place restante et son
+            // contenu défile à l'intérieur
+            const head = el.querySelector(".bh")?.offsetHeight || 34;
+            const tooLow = top + head + 40 > window.innerHeight;
             el.style.position = tooLow ? "relative" : "";
             el.style.top = tooLow ? "" : `${top}px`;
             el.style.maxHeight = tooLow ? "" : `calc(100vh - ${Math.round(top + 8)}px)`;
