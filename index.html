@@ -789,7 +789,9 @@
       .block.tall > .bb > .tbl-wrap {
         flex: 1 1 auto;
         min-height: 0; /* le tableau défile lui-même : en-têtes de colonnes figés */
-        max-height: none !important;
+        /* hauteur maximale multipliée par le nombre de rangées (sinon le tableau s'affiche en entier
+           et c'est la page qui défile, en emportant les en-têtes) */
+        max-height: calc(var(--h, var(--tmh, 320px)) * var(--rows, 1) + (var(--rows, 1) - 1) * 40px) !important;
       }
       /* Plein écran d'un bloc */
       .bh .max {
@@ -3277,7 +3279,7 @@
           ? `<colgroup>${ws.map((w) => `<col style="width:${w || 100}px">`).join("")}</colgroup>`
           : "";
         const tStyle = useGrist ? ` style="table-layout:fixed;width:${ws.reduce((a, w) => a + (w || 100), 0)}px"` : "";
-        body.innerHTML = `<div class="tbl-wrap" style="max-height:var(--h, ${S.cfg.tableMaxHeight}px)"><table class="${tableClasses(info)}"${useGrist ? ' data-locked="1"' : ""}${fit ? ' data-fit="1"' : ""}${tStyle} data-frozen="${Math.max(0, Number(info.opts.numFrozen) || 0)}">${colgroup}<thead><tr>${head}</tr></thead><tbody>${lines}</tbody></table></div>`;
+        body.innerHTML = `<div class="tbl-wrap" style="--tmh:${S.cfg.tableMaxHeight}px;max-height:var(--h, var(--tmh))"><table class="${tableClasses(info)}"${useGrist ? ' data-locked="1"' : ""}${fit ? ' data-fit="1"' : ""}${tStyle} data-frozen="${Math.max(0, Number(info.opts.numFrozen) || 0)}">${colgroup}<thead><tr>${head}</tr></thead><tbody>${lines}</tbody></table></div>`;
         if (rows.length > FIRST)
           jobs.push(() => {
             // le reste est ajouté par paquets, sans bloquer l'affichage
