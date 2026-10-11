@@ -3010,8 +3010,8 @@
       );
       /* Blocs « figés à l'écran » : sans réglage, ils se colleraient tous au même endroit sous l'en-tête et se
          recouvriraient (un graphique figé glisserait sur la carte figée au-dessus). Chaque bloc figé se colle donc
-         sous ceux, figés aussi, qui le précèdent dans la même colonne. Au-delà de 60 % de la hauteur de l'écran,
-         un bloc n'est plus figé, pour laisser de la place au défilement. */
+         sous ceux, figés aussi, qui le précèdent dans la même colonne. Un bloc qui n'a plus la place de montrer son
+         en-tête et le début de son contenu n'est plus figé, et passe alors sous les blocs figés. */
       let stickyRO = null,
         stickyRaf = 0;
       // stackSticky — Calcule la position de collage (top) de chaque bloc figé, colonne par colonne.
@@ -3023,16 +3023,20 @@
           const toph = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--toph")) || 0;
           const gap = 8,
             placed = [];
-          for (const el of els) {
+          els.forEach((el, i) => {
             const r = el.getBoundingClientRect();
             const above = placed.filter((p) => p.l < r.right - 1 && p.r > r.left + 1); // même colonne (chevauchement horizontal)
             const top = above.reduce((t, p) => Math.max(t, p.top + p.h + gap), toph + 6);
-            const tooLow = top > window.innerHeight * 0.6;
+            // plus assez de place pour montrer au moins l'en-tête et le début du bloc : il n'est plus figé
+            const tooLow = top + Math.min(el.offsetHeight, 160) > window.innerHeight - 60;
             el.style.position = tooLow ? "relative" : "";
             el.style.top = tooLow ? "" : `${top}px`;
             el.style.maxHeight = tooLow ? "" : `calc(100vh - ${Math.round(top + 8)}px)`;
+            // superposition : les blocs figés passent devant le reste, le premier figé devant les suivants ;
+            // un bloc qui n'est plus figé passe SOUS les blocs figés (sinon il glisserait par-dessus la carte)
+            el.style.zIndex = tooLow ? "1" : String(Math.max(3, 11 - i));
             if (!tooLow) placed.push({ l: r.left, r: r.right, top, h: el.offsetHeight });
-          }
+          });
         };
         apply();
         stickyRO = new ResizeObserver(() => {
