@@ -15,6 +15,17 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.5] — Colonnes renommées — 2026-10-11
+
+### Corrigé
+- **Le panneau de configuration relit la structure du document à chaque ouverture** : les colonnes et les vues renommées dans Grist y apparaissent sous leur nouveau nom, sans recharger la page.
+- **Les colonnes choisies dans la configuration suivent leur renommage** :
+  - colonnes concernées : étiquette, couleur et contour de carte, code INSEE, colonnes des listes de sélection, colonne additionnée, table de couleur des zones, filtre rapide ;
+  - le widget mémorise le numéro interne de chaque colonne, qui ne change pas, et retrouve son nouveau nom automatiquement.
+  - Le suivi vaut pour les colonnes enregistrées à partir de cette version : celles renommées avant doivent être choisies à nouveau une fois.
+
+---
+
 ## [0.8.4] — Mention AIA dans l'aide seulement — 2026-10-11
 
 ### Modifié
