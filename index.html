@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.7)                 ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.8)                 ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -1227,6 +1227,12 @@
       .tb {
         position: relative;
       }
+      #forms {
+        display: contents;
+      }
+      a.tb.formlink {
+        text-decoration: none;
+      }
       .tb .newdot {
         position: absolute;
         top: 3px;
@@ -1550,6 +1556,35 @@
         border-radius: 6px;
         padding: 8px 12px 10px;
         margin-bottom: 14px;
+      }
+      .cpage {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .cpage > label {
+        margin: 0;
+      }
+      .cforms {
+        margin-top: 8px;
+      }
+      .cforms > .lt {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .cother {
+        background: #fff8e1;
+        border: 1px solid #f0d58a;
+        border-radius: 4px;
+        padding: 6px 8px;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+      .cother label {
+        display: block;
+        margin: 4px 0 0;
       }
       .cs > h4 {
         margin: -8px -12px 8px;
@@ -1906,6 +1941,8 @@
       <div class="bar">
         <h1 id="title"></h1>
         <span class="spacer"></span>
+        <!-- liens vers des formulaires Grist (réglés par page, facultatifs) -->
+        <span id="forms"></span>
         <!-- menu hamburger : les boutons de la barre d'outils sont regroupés dans une liste déroulante -->
         <button class="tb" id="btnMenu" aria-haspopup="menu" aria-expanded="false" aria-controls="tbMenu" data-tip="Menu : actions de la page">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg
@@ -2061,7 +2098,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.7"; // voir CHANGELOG.md
+      const VERSION = "0.8.8"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -2992,6 +3029,16 @@
       new ResizeObserver(() =>
         document.documentElement.style.setProperty("--barw", `${$(".bar").offsetWidth}px`),
       ).observe($(".bar"));
+      // renderForms — Liens de la page vers des formulaires Grist (ouverts dans un nouvel onglet).
+      function renderForms() {
+        $("#forms").innerHTML = (S.cfg.forms || [])
+          .filter((f) => safeBase(f.url))
+          .map(
+            (f) =>
+              `<a class="tb formlink" href="${esc(safeBase(f.url))}" target="_blank" rel="noopener noreferrer" data-tip="${esc(f.tip || `${f.label || "Formulaire"} : ouvre le formulaire dans un nouvel onglet`)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6zM9 9h6M9 13h6M9 17h4" /></svg><span class="lbl">${esc(f.label || "Formulaire")}</span></a>`,
+          )
+          .join("");
+      }
       // menuToggle — Ouvre / ferme le menu hamburger de la barre d'outils.
       function menuToggle(open = $("#tbMenu").hidden) {
         $("#tbMenu").hidden = !open;
@@ -3017,7 +3064,8 @@
       });
       // infobulle immédiate des boutons quand leur texte est masqué (écran réduit), au survol comme au toucher
       function tbTip(btn) {
-        if (getComputedStyle(btn.querySelector(".lbl")).display !== "none") return;
+        // les liens vers des formulaires montrent toujours leur commentaire, même quand leur libellé est visible
+        if (!btn.classList.contains("formlink") && getComputedStyle(btn.querySelector(".lbl")).display !== "none") return;
         tip.textContent = btn.dataset.tip;
         tip.classList.add("on");
         const r = btn.getBoundingClientRect();
@@ -5374,6 +5422,7 @@
         const my = (S.renderSeq = (S.renderSeq || 0) + 1); // un rendu plus récent annule celui-ci
         const stale = () => my !== S.renderSeq;
         $("#title").textContent = S.cfg.title || "";
+        renderForms();
         const setNoTitle = () =>
           $("#top").classList.toggle(
             "notitle",
@@ -6341,6 +6390,37 @@
       let draftNav = { url: "", items: [] };
       let draft = null,
         cfgPage = null;
+      /* Page en cours de réglage (0.8.8) : on peut régler une autre page, ou en créer une, sans toucher à celle
+         qui est affichée. draftOrig = nom enregistré de la page réglée (null : nouvelle page, pas encore enregistrée),
+         draftBase = état de départ (pour prévenir avant d'abandonner des modifications non enregistrées). */
+      let draftOrig = null,
+        draftBase = "",
+        draftShowAfter = false,
+        draftAddNav = true,
+        draftIsShown = true; // le brouillon est-il la page affichée par ce widget ?
+      const draftShown = () => draftIsShown;
+      // editDraft — Met une configuration dans le brouillon (orig : nom enregistré, ou null pour une nouvelle page).
+      function editDraft(cfg, orig, shown = false) {
+        draftIsShown = shown;
+        draft = { ...DEFAULTS, ...JSON.parse(JSON.stringify(cfg)) };
+        draftOrig = orig;
+        draftBase = JSON.stringify(draft);
+        draftShowAfter = false;
+        draftAddNav = true;
+        const firstSec = draft.blocks.map((b) => S.meta.sections.get(b.id)).find(Boolean);
+        cfgPage = firstSec?.parentId || cfgPage || S.meta.pages[0]?.viewId;
+      }
+      // leaveDraft — Abandonner le brouillon en cours ? (demande confirmation s'il a été modifié)
+      const leaveDraft = () =>
+        !draft || JSON.stringify(draft) === draftBase || confirm(`Abandonner les modifications de « ${draft.name} » ?`);
+      // freeName — Nom libre dérivé de base (« Nouvelle page », « Nouvelle page 2 »…).
+      function freeName(base) {
+        const used = new Set((S.stored || []).map((x) => x.name));
+        let n = base,
+          k = 1;
+        while (used.has(n)) n = `${base} ${++k}`;
+        return n;
+      }
       /* Droit de configurer : contrôlé par une table témoin protégée par une règle d'accès.
    - table W_Admin absente : tout le monde peut configurer (comportement initial)
    - table présente : seuls ceux qui en voient au moins une ligne peuvent configurer */
@@ -6389,11 +6469,10 @@
           status(e.message, true);
           return;
         }
-        draft = JSON.parse(JSON.stringify(S.cfg));
+        cfgPage = null;
+        editDraft(S.cfg, S.cfg.name || null, true); // on part de la page affichée
         draftNav = JSON.parse(JSON.stringify(S.nav || { url: "", items: [] }));
         if (!draftNav.url) draftNav.url = await guessDocUrl();
-        const firstSec = draft.blocks.map((b) => S.meta.sections.get(b.id)).find(Boolean);
-        cfgPage = firstSec?.parentId || S.meta.pages[0]?.viewId;
         $("#config").hidden = false;
         renderConfig();
       }
@@ -6847,7 +6926,7 @@
         const body = $(".pbody"),
           keep = body ? body.scrollTop : 0; // la zone défilante est recréée : on garde sa position
         $("#panel").innerHTML = `
-    <div class="phead"><h3>Composer la page</h3>
+    <div class="phead"><h3>Composer la page <small style="font-weight:400">· ${esc(draft.name || "")}</small></h3>
       <div class="actions"><button class="btn" id="cCancel" title="Fermer sans rien modifier">Annuler</button><button class="btn primary" id="cSave" title="Appliquer et enregistrer la configuration dans ${CFG_TABLE}">Enregistrer</button></div></div>
     <div class="pfix">
       <div class="pvt">Aperçu de la disposition <span class="hint" title="Aperçu schématique : chaque rectangle est un bloc, à sa largeur et à sa place. Les listes de sélection, affichées dans l'en-tête, n'y figurent pas." style="text-transform:none;font-weight:400">ⓘ</span></div>
@@ -6855,18 +6934,46 @@
     </div>
     <div class="pbody">
     <section class="cs"><h4>Général</h4>
-      ${L("Nom de la configuration", `<input type="text" id="cName" value="${esc(draft.name || "Page composée")}" style="width:60%">`, "Nom sous lequel la configuration est enregistrée dans la table " + CFG_TABLE + ". Deux pages qui portent le même nom partagent la même configuration.")}
+      <div class="cpage">
+        ${L(
+          "Page réglée",
+          `<select id="cEdit">${draftOrig === null ? `<option value="" selected>${esc(draft.name)} (nouvelle)</option>` : ""}${(S.stored || [])
+            .filter((x) => !x.name.startsWith("_"))
+            .map((x) => `<option value="${x.id}" ${x.name === draftOrig ? "selected" : ""}>${esc(x.name)}${x.name === S.cfg.name ? " — affichée" : ""}</option>`)
+            .join("")}</select>`,
+          "Page dont on règle la composition. Choisir une autre page ne change pas ce qui est affiché dans le widget.",
+        )}
+        <button class="icon-btn" id="cNew" title="Créer une page vide, sans modifier la page affichée">＋ Nouvelle page</button>
+        <button class="icon-btn" id="cDup" title="Créer une nouvelle page à partir de celle-ci (mêmes blocs, mêmes réglages)">Dupliquer</button>
+      </div>
       ${
-        (S.stored || []).length
-          ? L(
-              "Reprendre une configuration enregistrée",
-              `<select id="cStored">${S.stored.map((x) => `<option value="${x.id}" ${x.name === draft.name ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>
-        <button class="icon-btn" id="cLoad" title="Remplace le brouillon par la configuration choisie (rien n'est enregistré avant « Enregistrer »)">Charger</button>`,
-              "Repartir d'une configuration existante, par exemple pour la dupliquer sous un autre nom.",
-            )
-          : ""
+        draftShown()
+          ? ""
+          : `<div class="cother">${draftOrig === null ? "Nouvelle page" : "Cette page n'est pas celle affichée"} : l'enregistrer ne change pas l'affichage du widget.
+        ${C('id="cShowAfter"', draftShowAfter, "L'afficher dans ce widget après l'enregistrement", "Ce widget affichera désormais cette page au lieu de « " + (S.cfg.name || "") + " ».")}
+        ${
+          draftNav.inWidget && !draftNav.items.some((x) => x.cfg === draftOrig && draftOrig)
+            ? C('id="cAddNav"', draftAddNav, "L'ajouter au menu de navigation", "Ajoute un lien vers cette page dans le menu commun (changement de page dans le widget).")
+            : draftNav.inWidget
+              ? ""
+              : `<small>Pour l'afficher sur une autre page Grist : ajoutez-y ce widget, puis choisissez « ${esc(draft.name)} » dans « Page réglée » et cochez « L'afficher dans ce widget ».</small>`
+        }</div>`
       }
+      ${L("Nom de la page", `<input type="text" id="cName" value="${esc(draft.name || "Page composée")}" style="width:60%">`, "Nom sous lequel la configuration est enregistrée dans la table " + CFG_TABLE + ".")}
       ${L("Titre affiché", `<input type="text" id="cTitle" value="${esc(draft.title)}" placeholder="(aucun)" style="width:100%">`, "Titre en haut de la page et des impressions. Vide : pas de titre, ce qui laisse plus de place.")}
+      <div class="cforms"><span class="lt" title="Boutons affichés dans l'en-tête de la page, à gauche du menu. Adresse du formulaire : dans Grist, ouvrir la vue Formulaire, « Publier », puis « Partager » → copier le lien.">Liens vers des formulaires Grist</span>
+        ${(draft.forms || [])
+          .map(
+            (f, i) => `<div class="mn">
+          <input type="text" data-fml="${i}" value="${esc(f.label || "")}" placeholder="Libellé (ex. Signaler)" title="Texte du bouton" style="width:150px">
+          <input type="text" data-fmt="${i}" value="${esc(f.tip || "")}" placeholder="Commentaire au survol (facultatif)" title="Texte affiché au survol du bouton. Vide : « ouvre le formulaire dans un nouvel onglet »." style="flex:1;min-width:180px">
+          <input type="text" data-fmu="${i}" value="${esc(f.url || "")}" placeholder="https://…/forms/…" title="Adresse du formulaire publié (https uniquement)" style="flex:1;min-width:200px">
+          ${f.url && !safeBase(f.url) ? '<span style="color:var(--rouge)">adresse https requise</span>' : ""}
+          <button class="icon-btn" data-fmrm="${i}" title="Retirer ce lien">✕</button></div>`,
+          )
+          .join("")}
+        <button class="icon-btn" id="cFmAdd" title="Ajoute un bouton vers un formulaire Grist dans l'en-tête de cette page">+ Ajouter un lien vers un formulaire</button>
+      </div>
     </section>
     <section class="cs"><h4>1. Vues disponibles <small>— cocher les vues Grist à afficher</small></h4>
       ${L("Page", `<select id="cPage">${pageOpts}</select>`, "Page Grist dont on liste les vues. On peut combiner des vues de plusieurs pages.")}
@@ -7084,6 +7191,19 @@
         if (t.id === "cMaxH") draft.tableMaxHeight = Math.max(120, Number(t.value) || 320);
         if (t.id === "cTitle") draft.title = t.value;
         if (t.id === "cName") draft.name = t.value;
+        if (t.id === "cShowAfter") draftShowAfter = t.checked;
+        if (t.dataset.fml) draft.forms[Number(t.dataset.fml)].label = t.value.trim();
+        if (t.dataset.fmt) draft.forms[Number(t.dataset.fmt)].tip = t.value.trim();
+        if (t.dataset.fmu) {
+          draft.forms[Number(t.dataset.fmu)].url = t.value.trim();
+          renderConfig(); // signale une adresse refusée
+        }
+        if (t.id === "cAddNav") draftAddNav = t.checked;
+        if (t.id === "cEdit") {
+          const x = (S.stored || []).find((y) => y.id === Number(t.value));
+          if (x && leaveDraft()) editDraft({ ...x.cfg, name: x.name }, x.name, x.name === S.cfg.name);
+          renderConfig(); // sinon (refus) : la liste revient sur la page en cours
+        }
       });
       $("#panel").addEventListener("click", async (ev) => {
         const t = ev.target.closest("button");
@@ -7133,17 +7253,62 @@
           draftNav.items.splice(Number(t.dataset.mnrm), 1);
           return renderConfig();
         }
-        if (t.id === "cLoad") {
-          const x = (S.stored || []).find((y) => y.id === Number($("#cStored").value));
-          if (x) {
-            draft = { ...DEFAULTS, ...JSON.parse(JSON.stringify(x.cfg)), name: x.name };
-            renderConfig();
-          }
-          return;
+        if (t.id === "cFmAdd") {
+          (draft.forms ||= []).push({ label: "", url: "" });
+          return renderConfig();
+        }
+        if (t.dataset.fmrm) {
+          draft.forms.splice(Number(t.dataset.fmrm), 1);
+          return renderConfig();
+        }
+        if (t.id === "cNew") {
+          if (!leaveDraft()) return;
+          editDraft({ name: freeName("Nouvelle page"), title: "", blocks: [] }, null);
+          draftBase = ""; // une page neuve non enregistrée compte comme modifiée
+          return renderConfig();
+        }
+        if (t.id === "cDup") {
+          editDraft({ ...draft, name: freeName(`${draft.name} (copie)`) }, null); // garde les réglages en cours
+          draftBase = "";
+          return renderConfig();
         }
         if (t.id === "cSave") {
           draft.title = $("#cTitle").value;
           draft.name = $("#cName").value.trim() || "Page composée";
+          draft.forms = (draft.forms || []).filter((f) => safeBase(f.url)); // lignes vides ou adresses refusées
+          if (draft.name.startsWith("_")) return alert("Le nom d'une page ne peut pas commencer par « _ » (réservé).");
+          if (
+            draft.name !== draftOrig &&
+            (S.stored || []).some((x) => x.name === draft.name) &&
+            !confirm(`Une page « ${draft.name} » existe déjà : la remplacer par celle-ci ?`)
+          )
+            return;
+          draftNav.url = $("#cMnUrl")?.value.trim() ?? draftNav.url;
+          if (draftNav.inWidget && !draftShown() && draftAddNav && !draftNav.items.some((x) => x.cfg === draft.name))
+            draftNav.items.push({ label: "", viewId: 0, cfg: draft.name }); // nouvelle page ajoutée au menu
+          if (!draftShown() && !draftShowAfter) {
+            // autre page que celle affichée : enregistrée dans la table seulement, l'affichage ne change pas
+            $("#config").hidden = true;
+            rememberColRefs(draft);
+            try {
+              await saveConfigToTable(draft);
+              status(`Page « ${draft.name} » enregistrée (la page affichée n'a pas changé).`);
+              setTimeout(() => status(""), 5000);
+            } catch (e) {
+              status(`Page « ${draft.name} » non enregistrée dans ${CFG_TABLE} : ${e.message || e}`, true);
+            }
+            if (JSON.stringify(draftNav) !== JSON.stringify(S.nav)) {
+              S.nav = draftNav;
+              S.navAccess = {};
+              try {
+                await saveConfigToTable({ name: NAV_NAME, nav: draftNav });
+              } catch {
+                /* droits insuffisants */
+              }
+            }
+            renderNav();
+            return;
+          }
           draft.dataTable = S.ext.tableId;
           S.choosing = false;
           status("");
@@ -7161,7 +7326,6 @@
           } catch (e) {
             status(`Configuration appliquée mais non enregistrée dans ${CFG_TABLE} : ${e.message || e}`, true);
           }
-          draftNav.url = $("#cMnUrl")?.value.trim() ?? draftNav.url;
           if (JSON.stringify(draftNav) !== JSON.stringify(S.nav)) {
             S.nav = draftNav;
             S.navAccess = {};
