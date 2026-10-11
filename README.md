@@ -75,7 +75,7 @@ Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md).
 
 | Fichier | Rôle |
 |---|---|
-| `ux-widget-grist.html` | Le widget (fichier unique : HTML, CSS, JavaScript) |
+| `index.html` | Le widget (fichier unique : HTML, CSS, JavaScript), servi par défaut par GitHub Pages |
 | `qpv-bretagne.geojson` | Périmètres des quartiers prioritaires 2024 (22, 29, 35, 56), facultatif |
 | `README.md` | Ce document : installation et fonctionnement technique |
 | `GUIDE-UTILISATEUR.md` | Guide pour les utilisateurs et les administrateurs |
@@ -87,10 +87,10 @@ Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md).
 
 Le widget est un **fichier HTML unique**, sans étape de construction.
 
-1. **Héberger les fichiers** : déposer `ux-widget-grist.html` et `qpv-bretagne.geojson` dans un dépôt GitHub, puis activer **GitHub Pages** (*Settings → Pages → Deploy from a branch → main / root*).
+1. **Héberger les fichiers** : déposer `index.html` et `qpv-bretagne.geojson` dans un dépôt GitHub (par exemple `ux-widget-grist`), puis activer **GitHub Pages** (*Settings → Pages → Deploy from a branch → main / root*).
    Adresse obtenue :
    ```
-   https://<compte>.github.io/<dépôt>/ux-widget-grist.html
+   https://<compte>.github.io/<dépôt>/
    ```
 2. **Ajouter le widget dans Grist** :
    - *Ajouter un widget → Personnalisé*, sur n'importe quelle table ;
@@ -106,7 +106,7 @@ Le widget est un **fichier HTML unique**, sans étape de construction.
 > Tout autre hébergement statique en HTTPS convient aussi, par exemple un serveur interne. Le fichier GeoJSON des QPV doit être placé à côté du widget, ou son adresse indiquée dans la configuration de la carte.
 
 **Migration depuis l'ancien nom (« page composée »)**
-- Le fichier s'appelle désormais `ux-widget-grist.html` : mettre à jour l'URL du widget dans Grist.
+- Le dépôt s'appelle désormais `ux-widget-grist` et le widget est servi à sa racine (`index.html`) : mettre à jour l'URL du widget dans Grist.
 - Les configurations enregistrées sont conservées.
 
 ---
