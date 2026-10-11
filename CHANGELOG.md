@@ -15,6 +15,13 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.4] — Mention AIA dans l'aide seulement — 2026-10-11
+
+### Modifié
+- La mention AIA n'apparaît plus en pied de page du widget. Elle reste dans la fenêtre d'aide et en tête des trois documents.
+
+---
+
 ## [0.8.3] — Mention AIA — 2026-10-11
 
 ### Ajouté
