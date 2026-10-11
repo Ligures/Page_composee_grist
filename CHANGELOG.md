@@ -15,7 +15,7 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.8.8] — Nouvelle page sans toucher à la page affichée — 2026-10-11
+## [0.8.8] — Nouvelles pages, liens vers des formulaires, filtres rapides synchronisés — 2026-10-11
 
 ### Ajouté
 - Configuration, section Général : **Page réglée** permet de régler n'importe quelle page enregistrée sans changer celle qui est affichée.
