@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.4)                 ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.5)                 ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -2027,7 +2027,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.4"; // voir CHANGELOG.md
+      const VERSION = "0.8.5"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -5240,6 +5240,7 @@
       // render — RENDU PRINCIPAL. Recalcule toute la page ; un rendu plus récent annule le précédent (renderSeq).
       async function render() {
         if (!S.ready || !S.meta || S.choosing) return;
+        fixColIds(S.cfg); // colonnes renommées dans Grist depuis l'enregistrement de la configuration
         if (S.editing) {
           S.pendingRender = true;
           return;
@@ -6157,6 +6158,44 @@
       });
       $("#btnConfig").addEventListener("click", () => openConfig());
 
+      /* Colonnes choisies dans la configuration : elles sont enregistrées par identifiant (colId), qui change quand
+         on renomme une colonne dans Grist. On garde aussi leur numéro interne (colRef, stable) dans b._refs pour
+         retrouver le nouvel identifiant automatiquement. */
+      const COL_FIELDS = ["mapLabel", "mapColor", "mapRing", "mapCommune", "selCol", "selGroup", "zoneSum", "qfField"];
+      const COL_SPECIAL = new Set(["", "__qpv", "__pos"]); // valeurs qui ne sont pas des colonnes
+      // colFieldTable — Table d'une option de colonne (zoneKey / zoneVal : table choisie pour colorer les zones).
+      function colFieldTable(b, f) {
+        if (f === "zoneKey" || f === "zoneVal") return [...S.meta.tables.values()].find((t) => t.tableId === b.zoneTable)?.id;
+        return S.meta.sections.get(b.id)?.tableRef;
+      }
+      // rememberColRefs — À l'enregistrement : mémorise le colRef de chaque colonne choisie.
+      function rememberColRefs(cfg) {
+        for (const b of cfg.blocks || []) {
+          const refs = {};
+          for (const f of [...COL_FIELDS, "zoneKey", "zoneVal"]) {
+            if (COL_SPECIAL.has(b[f] ?? "")) continue;
+            const c = (S.meta.colsByTable.get(colFieldTable(b, f)) || []).find((x) => x.colId === b[f]);
+            if (c) refs[f] = c.id;
+          }
+          b._refs = refs;
+        }
+      }
+      // fixColIds — Au chargement : remplace l'identifiant d'une colonne renommée par son nouvel identifiant.
+      function fixColIds(cfg) {
+        let changed = false;
+        for (const b of cfg?.blocks || []) {
+          for (const [f, ref] of Object.entries(b._refs || {})) {
+            const cols = S.meta.colsByTable.get(colFieldTable(b, f)) || [];
+            if (cols.some((x) => x.colId === b[f])) continue; // toujours valide
+            const c = S.meta.cols.get(ref);
+            if (c && cols.includes(c)) {
+              b[f] = c.colId;
+              changed = true;
+            }
+          }
+        }
+        return changed;
+      }
       // refreshAll — Bouton Actualiser : vide les caches et relit métadonnées, configuration et données.
       async function refreshAll() {
         S.cache = {};
@@ -6164,6 +6203,7 @@
         try {
           status("Rechargement…");
           await loadMeta();
+          fixColIds(S.cfg); // colonnes renommées dans Grist
           await render();
         } catch (e) {
           status(e.message || String(e), true);
@@ -6215,13 +6255,12 @@
       // openConfig — Ouvre le panneau de configuration sur un brouillon (draft) de la configuration courante.
       async function openConfig() {
         if (!S.isAdmin) return;
-        if (!S.meta) {
-          try {
-            await loadMeta();
-          } catch (e) {
-            status(e.message, true);
-            return;
-          }
+        try {
+          await loadMeta(); // toujours relire la structure : colonnes ou vues renommées depuis l'ouverture
+          fixColIds(S.cfg);
+        } catch (e) {
+          status(e.message, true);
+          return;
         }
         draft = JSON.parse(JSON.stringify(S.cfg));
         draftNav = JSON.parse(JSON.stringify(S.nav || { url: "", items: [] }));
@@ -6989,6 +7028,7 @@
           } catch {
             /* options du widget : facultatif */
           }
+          rememberColRefs(draft); // pour suivre les colonnes renommées
           try {
             await saveConfigToTable(draft);
           } catch (e) {
