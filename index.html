@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.3)                 ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.4)                 ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -1063,24 +1063,7 @@
       dd[data-kind="sel"][data-ed] {
         padding-right: 18px;
       }
-      /* Mention AIA (usage transparent de l'IA) en pied de page */
-      #aia {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 18px 0 4px;
-        padding-top: 8px;
-        border-top: 1px solid var(--bord);
-        font-size: 11px;
-        color: var(--muet);
-      }
-      #aia img {
-        flex: none;
-        border-radius: 4px;
-      }
-      #aia a {
-        color: inherit;
-      }
+      /* Icône AIA (usage transparent de l'IA) dans l'en-tête de l'aide */
       #help .aia-mini {
         flex: none;
         border-radius: 3px;
@@ -1969,17 +1952,6 @@
     </header>
     <div id="printhead"></div>
     <main id="grid" class="grid"></main>
-    <!-- Mention d'usage de l'IA (icônes de Martine Peters, CC BY-NC-SA 4.0). aia.png est déposé à côté du widget ;
-         s'il manque, l'image est masquée et seule la mention texte reste. -->
-    <footer id="aia">
-      <img src="aia.png" alt="AIA" height="36" onerror="this.remove()" />
-      <span
-        ><b>AIA</b> — Assisté par l'intelligence artificielle. Icône :
-        <a href="https://mpeters.uqo.ca/utilisation-transparente-de-lintelligence-artificielle/" target="_blank" rel="noopener"
-          >Martine Peters</a
-        >, CC BY-NC-SA 4.0</span
-      >
-    </footer>
     <div id="rcBack"></div>
     <div id="rc" role="dialog" aria-modal="true"></div>
     <div id="help" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
@@ -2055,7 +2027,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.3"; // voir CHANGELOG.md
+      const VERSION = "0.8.4"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
