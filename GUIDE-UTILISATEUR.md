@@ -224,6 +224,9 @@ Il est sans données et l'option « Masquer les blocs sans données » est activ
 **L'action Configurer n'apparaît pas dans le menu.**
 Vous n'avez pas accès à la table `W_Admin` : seuls les administrateurs configurent les pages.
 
+**J'ai renommé une colonne ou une vue dans Grist.**
+Le panneau **Configurer** relit la structure à chaque ouverture : les nouveaux noms y apparaissent. Les colonnes déjà choisies dans les réglages suivent automatiquement leur renommage, pour les configurations enregistrées depuis la version 0.8.5. Pour l'affichage des pages, choisissez **☰ → Actualiser**.
+
 **Les modifications du widget n'apparaissent pas après une mise à jour.**
 Rechargez la page avec **Ctrl + F5** pour vider le cache du navigateur.
 
