@@ -1,5 +1,8 @@
 # Guide d'utilisation — UX widget grist
 
+<img src="aia.png" alt="AIA" width="40" align="left" /> **AIA — Assisté par l'intelligence artificielle.** Ce widget et sa documentation ont été réalisés avec l'assistance d'une IA, sous la direction et avec la validation de leur auteur. Icône : [Martine Peters](https://mpeters.uqo.ca/utilisation-transparente-de-lintelligence-artificielle/), CC BY-NC-SA 4.0.
+<br clear="left" />
+
 Ce guide s'adresse :
 - aux **utilisateurs**, qui consultent les pages : partie 1 ;
 - aux **administrateurs**, qui les composent : partie 2.
@@ -37,16 +40,17 @@ Pour l'installation et le fonctionnement technique, voir le `README.md`.
 En haut de la page, de gauche à droite et de haut en bas :
 
 - **Menu des pages** : un clic affiche une autre page. Seules les pages auxquelles vous avez accès apparaissent.
-- **Barre d'outils** :
+- **Menu ☰** (en haut à droite) : il ouvre la liste des actions.
 
-  | Bouton | Rôle |
+  | Action | Rôle |
   |---|---|
   | Tout replier / Tout déplier | Replie ou déplie tous les blocs d'un coup |
   | Actualiser | Recharge les données et la configuration des vues |
   | Imprimer | Imprime la page ou l'enregistre en PDF |
+  | Aide | Ouvre ce guide ; l'onglet Nouveautés présente les évolutions du widget |
   | Disposition, Configurer | Réservés aux administrateurs (partie 2) |
 
-  Sur un écran étroit, seules les icônes restent : le libellé s'affiche au survol.
+  Une pastille rouge sur ☰ signale une nouvelle version du widget : elle disparaît après lecture de l'onglet Nouveautés.
 - **Listes de sélection** (par exemple Département, Circonscription, École) : choisir une valeur filtre les blocs de la page.
   - Une liste qui ne propose qu'un seul choix, selon vos droits, n'est pas affichée : sa valeur s'applique automatiquement.
   - Certaines listes gardent leur sélection quand vous changez de page.
@@ -108,11 +112,11 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 
 ## 2. Composer une page (administrateurs)
 
-Les boutons **Disposition** et **Configurer** n'apparaissent qu'aux administrateurs : les personnes qui ont accès à la table `W_Admin`.
+Les actions **Disposition** et **Configurer** du menu ☰ n'apparaissent qu'aux administrateurs : les personnes qui ont accès à la table `W_Admin`.
 
 ### Ouvrir la configuration
 
-**Configurer** ouvre un panneau sur la moitié droite de l'écran :
+**☰ → Configurer** ouvre un panneau sur la moitié droite de l'écran :
 - l'**aperçu de la disposition** reste affiché en haut ;
 - chaque option est expliquée au **survol** de son libellé (soulignement en pointillés) ;
 - rien n'est appliqué avant **Enregistrer**, et **Annuler** ferme le panneau sans rien changer.
@@ -149,7 +153,7 @@ Les boutons **Disposition** et **Configurer** n'apparaissent qu'aux administrate
   - **Mode ultracompact** : les blocs prennent la largeur de leurs données.
   - **Combler automatiquement les espaces libres** : un petit bloc peut remonter dans un trou.
   - **Empiler les blocs sans trous** : chaque colonne s'empile indépendamment.
-- **Bouton Disposition** (hors du panneau) : on déplace les blocs à la souris et on les redimensionne par leur coin inférieur droit. Terminer par *Enregistrer* ou *Annuler*.
+- **☰ → Disposition** (hors du panneau) : on déplace les blocs à la souris et on les redimensionne par leur coin inférieur droit. Terminer par *Enregistrer* ou *Annuler*.
 
 ### Filtre rapide
 
@@ -212,12 +216,12 @@ Section **5. Navigation entre pages**. Ce réglage est commun à toutes les conf
 ## 3. Questions fréquentes
 
 **Une valeur ne correspond pas à ce que montre Grist.**
-Le widget affiche les colonnes de la vue Grist. Vérifiez la vue native, puis cliquez sur **Actualiser**.
+Le widget affiche les colonnes de la vue Grist. Vérifiez la vue native, puis choisissez **☰ → Actualiser**.
 
 **Un bloc a disparu.**
 Il est sans données et l'option « Masquer les blocs sans données » est active. Faites une sélection dans les listes.
 
-**Le bouton Configurer n'apparaît pas.**
+**L'action Configurer n'apparaît pas dans le menu.**
 Vous n'avez pas accès à la table `W_Admin` : seuls les administrateurs configurent les pages.
 
 **Les modifications du widget n'apparaissent pas après une mise à jour.**
@@ -227,5 +231,5 @@ Rechargez la page avec **Ctrl + F5** pour vider le cache du navigateur.
 - Vérifiez que les colonnes de latitude et de longitude sont renseignées.
 - Pour les contours des communes, la colonne **Code INSEE** doit contenir un code à 5 chiffres, et non le nom de la commune. Sinon, choisissez « position des points ».
 
-**Où voir la version du widget ?**
-En bas du panneau **Configurer**. L'historique des versions est dans `CHANGELOG.md`.
+**Où voir la version du widget et ses nouveautés ?**
+Dans le titre de la fenêtre **☰ → Aide**, onglet **Nouveautés**. Les administrateurs la voient aussi en bas du panneau **Configurer**.
