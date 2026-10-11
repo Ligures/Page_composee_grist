@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 1.0.0)                 ║
+  ║  UX widget grist — widget personnalisé Grist (version 1.1.0)                 ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -1019,6 +1019,147 @@
       dd[data-kind="sel"][data-ed] {
         padding-right: 18px;
       }
+      /* Fenêtre d'aide (Markdown du dépôt) */
+      #help {
+        position: fixed;
+        inset: 0;
+        z-index: 35;
+        background: rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+      }
+      #help[hidden] {
+        display: none;
+      }
+      #help .hbox {
+        background: #fff;
+        border-radius: 6px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        width: min(860px, 100%);
+        height: min(90vh, 100%);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      #help .hhead {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        padding: 10px 14px;
+        border-bottom: 2px solid var(--bleu);
+      }
+      #help .hhead h3 {
+        margin: 0;
+        font-size: 15px;
+        color: var(--bleu);
+        flex: 1;
+      }
+      #help .htabs {
+        display: flex;
+        gap: 4px;
+      }
+      #help .htabs button {
+        border: 1px solid var(--bord);
+        background: #fff;
+        color: var(--bleu);
+        border-radius: 4px;
+        padding: 3px 12px;
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      #help .htabs button.on {
+        background: var(--bleu);
+        color: #fff;
+        border-color: var(--bleu);
+      }
+      #help .hbody {
+        flex: 1;
+        overflow: auto;
+        padding: 6px 22px 24px;
+        line-height: 1.55;
+        font-size: 14px;
+      }
+      .md h1 {
+        font-size: 21px;
+        color: var(--bleu);
+      }
+      .md h2 {
+        font-size: 17px;
+        color: var(--bleu);
+        border-bottom: 1px solid var(--bord);
+        padding-bottom: 3px;
+        margin-top: 26px;
+      }
+      .md h3 {
+        font-size: 15px;
+        margin-top: 18px;
+      }
+      .md table {
+        border-collapse: collapse;
+        margin: 8px 0;
+        font-size: 13px;
+      }
+      .md th,
+      .md td {
+        border: 1px solid var(--bord);
+        padding: 4px 8px;
+        text-align: left;
+        vertical-align: top;
+        position: static;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        max-width: none;
+        height: auto;
+      }
+      .md code {
+        background: #f3f3f3;
+        border-radius: 3px;
+        padding: 0 4px;
+        font-size: 12.5px;
+      }
+      .md pre {
+        background: #f6f6f6;
+        padding: 8px 10px;
+        border-radius: 4px;
+        overflow: auto;
+      }
+      .md pre code {
+        background: none;
+        padding: 0;
+      }
+      .md blockquote {
+        margin: 8px 0;
+        padding: 4px 12px;
+        border-left: 4px solid var(--bleu-clair);
+        color: var(--muet);
+      }
+      .md hr {
+        border: 0;
+        border-top: 1px solid var(--bord);
+        margin: 18px 0;
+      }
+      /* pastille « nouvelle version » sur le bouton Aide */
+      .tb {
+        position: relative;
+      }
+      .tb .newdot {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--rouge);
+        box-shadow: 0 0 0 2px #fff;
+      }
+      .tb .newdot[hidden] {
+        display: none;
+      }
       #rcBack {
         position: fixed;
         inset: 0;
@@ -1599,6 +1740,7 @@
         #lybar,
         #rc,
         #rcBack,
+        #help,
         #backdrop,
         #tip,
         .picker,
@@ -1718,6 +1860,13 @@
             <rect x="3" y="13" width="8" height="8" rx="1" /></svg
           ><span class="lbl">Disposition</span>
         </button>
+        <button class="tb" id="btnHelp" aria-label="Aide" data-tip="Aide : guide d'utilisation et nouveautés">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6" />
+            <path d="M12 17.5h.01" /></svg
+          ><span class="lbl">Aide</span><span class="newdot" hidden></span>
+        </button>
         <button
           class="tb"
           id="btnConfig"
@@ -1749,6 +1898,16 @@
     <main id="grid" class="grid"></main>
     <div id="rcBack"></div>
     <div id="rc" role="dialog" aria-modal="true"></div>
+    <div id="help" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+      <div class="hbox">
+        <div class="hhead">
+          <h3 id="helpTitle">Aide</h3>
+          <nav class="htabs" role="tablist"></nav>
+          <button class="btn" id="helpClose" title="Fermer (Échap)">✕</button>
+        </div>
+        <div class="hbody md"></div>
+      </div>
+    </div>
 
     <div id="config" hidden>
       <div class="panel" id="panel"></div>
@@ -1811,7 +1970,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "1.0.0"; // voir CHANGELOG.md
+      const VERSION = "1.1.0"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -3760,6 +3919,10 @@
         clip: [
           "https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js",
           "sha384-2gzcIyrtB96QDjrxsFcJ1O461CWiXJ8fiHgIkJLwTgy4WTktHXTOXt4dviXz9Y5Q",
+        ],
+        marked: [
+          "https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js",
+          "sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi",
         ],
         purify: [
           "https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js",
@@ -5772,6 +5935,122 @@
         window.print();
       }
       $("#btnPrint").addEventListener("click", () => printPage());
+
+      /* ---------- Aide intégrée ----------
+         Les fichiers Markdown du dépôt (à côté du widget sur GitHub Pages) sont lus à l'ouverture et affichés
+         dans une fenêtre à onglets : déposer une nouvelle version sur GitHub met l'aide à jour.
+         Mise en forme : marked ; HTML nettoyé par DOMPurify. Une pastille signale une nouvelle version. */
+      const HELP_DOCS = [
+        { id: "guide", label: "Guide", file: "GUIDE-UTILISATEUR.md" },
+        { id: "news", label: "Nouveautés", file: "CHANGELOG.md" },
+        { id: "about", label: "À propos", file: "README.md", admin: true }, // documentation technique : administrateurs
+      ];
+      const SEEN_KEY = "uxwg_seen_version"; // dernière version dont l'utilisateur a vu les nouveautés (navigateur)
+      const helpCache = {};
+      let helpTab = "guide";
+      // seenVersion / markSeen — Version déjà vue (stockage local du navigateur, facultatif).
+      const seenVersion = () => {
+        try {
+          return localStorage.getItem(SEEN_KEY) || "";
+        } catch {
+          return VERSION; // stockage indisponible : pas de pastille
+        }
+      };
+      const markSeen = () => {
+        try {
+          localStorage.setItem(SEEN_KEY, VERSION);
+        } catch {
+          /* facultatif */
+        }
+        updateHelpDot();
+      };
+      // updateHelpDot — Pastille « nouveau » sur le bouton Aide si la version a changé depuis la dernière visite.
+      function updateHelpDot() {
+        const dot = $("#btnHelp .newdot"),
+          isNew = seenVersion() !== VERSION;
+        dot.hidden = !isNew;
+        $("#btnHelp").dataset.tip = isNew
+          ? `Aide — nouvelle version ${VERSION} : voir les nouveautés`
+          : "Aide : guide d'utilisation et nouveautés";
+      }
+      // slug — Identifiant d'ancre d'un titre, comme GitHub (« 2. Composer une page » → « 2-composer-une-page »).
+      const slug = (t) =>
+        t
+          .trim()
+          .toLowerCase()
+          .replace(/[^\p{L}\p{N}\s_-]/gu, "")
+          .replace(/\s/g, "-");
+      // helpLoad — Lit et met en forme un fichier Markdown (mis en cache pour la session).
+      function helpLoad(doc) {
+        return (helpCache[doc.id] ??= Promise.all([
+          window.marked ? null : loadLib(LIBS.marked, "marked"),
+          window.DOMPurify ? null : loadLib(LIBS.purify, "DOMPurify"),
+        ])
+          .then(() => fetch(new URL(doc.file, location.href), { cache: "no-cache" }))
+          .then((r) => {
+            if (!r.ok) throw new Error(`${doc.file} introuvable (HTTP ${r.status})`);
+            return r.text();
+          })
+          .then((md) => DOMPurify.sanitize(marked.parse(md)))
+          .catch((e) => {
+            delete helpCache[doc.id];
+            throw e;
+          }));
+      }
+      // openHelp — Ouvre la fenêtre d'aide sur un onglet (et une ancre éventuelle).
+      async function openHelp(tab = helpTab, anchor = "") {
+        const docs = HELP_DOCS.filter((d) => !d.admin || S.isAdmin);
+        const doc = docs.find((d) => d.id === tab) || docs[0];
+        helpTab = doc.id;
+        $("#help").hidden = false;
+        $("#helpTitle").textContent = `Aide — UX widget grist ${VERSION}`;
+        $("#help .htabs").innerHTML = docs
+          .map((d) => `<button role="tab" data-htab="${d.id}" class="${d.id === doc.id ? "on" : ""}" aria-selected="${d.id === doc.id}">${esc(d.label)}</button>`)
+          .join("");
+        const body = $("#help .hbody");
+        body.innerHTML = '<p class="msg">Chargement…</p>';
+        try {
+          body.innerHTML = await helpLoad(doc);
+          body.querySelectorAll("h1, h2, h3, h4").forEach((h) => (h.id = slug(h.textContent)));
+          body.querySelectorAll("a[href]").forEach((a) => {
+            if (/^https?:/i.test(a.getAttribute("href"))) Object.assign(a, { target: "_blank", rel: "noopener" });
+          });
+          if (doc.id === "news") markSeen();
+          const target = anchor && body.querySelector(`#${CSS.escape(anchor)}`);
+          if (target) target.scrollIntoView();
+          else body.scrollTop = 0;
+        } catch (e) {
+          body.innerHTML = `<p class="msg err">Aide indisponible : ${esc(e.message || e)}.</p>
+            <p class="msg">Les fichiers ${HELP_DOCS.map((d) => `<code>${d.file}</code>`).join(", ")} doivent être déposés à côté du widget.</p>`;
+        }
+      }
+      const closeHelp = () => ($("#help").hidden = true);
+      $("#btnHelp").addEventListener("click", () => openHelp(seenVersion() !== VERSION ? "news" : helpTab));
+      $("#helpClose").addEventListener("click", closeHelp);
+      $("#help").addEventListener("click", (ev) => {
+        if (ev.target.id === "help") return closeHelp(); // clic sur le fond
+        const t = ev.target.closest("[data-htab]");
+        if (t) return openHelp(t.dataset.htab);
+        const a = ev.target.closest("a[href]");
+        if (!a) return;
+        const href = a.getAttribute("href");
+        if (href.startsWith("#")) {
+          // ancre dans le document affiché
+          ev.preventDefault();
+          $("#help .hbody").querySelector(`#${CSS.escape(decodeURIComponent(href.slice(1)))}`)?.scrollIntoView();
+          return;
+        }
+        const m = /^(?:\.\/)?([\w.-]+\.md)(?:#(.*))?$/i.exec(href); // lien vers un autre fichier de l'aide
+        const doc = m && HELP_DOCS.find((d) => d.file.toLowerCase() === m[1].toLowerCase());
+        if (doc) {
+          ev.preventDefault();
+          openHelp(doc.id, m[2] ? decodeURIComponent(m[2]) : "");
+        }
+      });
+      document.addEventListener("keydown", (ev) => {
+        if (ev.key === "Escape" && !$("#help").hidden) closeHelp();
+      });
+      updateHelpDot();
 
       // updateFoldButton — Libellé du bouton « Tout replier / Tout déplier » selon l'état des blocs.
       function updateFoldButton() {
