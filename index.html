@@ -729,6 +729,11 @@
         flex: 1 1 auto;
         min-height: 0;
       }
+      #stickyMask > div {
+        position: fixed;
+        z-index: 2;
+        background: #fff;
+      }
       .block.collapsed > .bb {
         display: none !important;
       }
@@ -1801,6 +1806,9 @@
         padding: 0 4px;
       }
       @media print {
+        #stickyMask {
+          display: none;
+        }
         @page {
           size: A4;
           margin: 12mm 10mm;
@@ -3044,7 +3052,7 @@
       function stackSticky(grid = $("#grid")) {
         stickyRO?.disconnect();
         const els = [...grid.querySelectorAll(":scope > .block.sticky")];
-        if (!els.length) return;
+        if (!els.length) return maskSticky();
         const apply = () => {
           const toph = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--toph")) || 0;
           const gap = 8,
@@ -3068,14 +3076,62 @@
           });
         };
         apply();
+        maskSticky();
         stickyRO = new ResizeObserver(() => {
           cancelAnimationFrame(stickyRaf);
-          stickyRaf = requestAnimationFrame(apply); // pliage, dépliage, contenu chargé
+          stickyRaf = requestAnimationFrame(() => {
+            apply(); // pliage, dépliage, contenu chargé
+            maskSticky();
+          });
         });
         els.forEach((el) => stickyRO.observe(el));
         stickyRO.observe($("#top")); // hauteur de l'en-tête
       }
       window.addEventListener("resize", () => stackSticky());
+      /* maskSticky — Masque blanc sous les blocs figés côte à côte. Quand deux blocs figés voisins n'ont pas la même
+         hauteur, un bloc qui défile dessous passait derrière le plus haut mais restait visible sous le plus court.
+         Les blocs figés voisins (qui se touchent ou presque horizontalement) forment un groupe ; un masque fixe couvre
+         toute la largeur du groupe jusqu'au bas du plus haut : le contenu disparaît sur une même ligne. Le masque
+         passe sous les blocs figés (z-index 2) et devant le reste. */
+      let maskRaf = 0;
+      function maskSticky() {
+        let box = $("#stickyMask");
+        if (!box) {
+          box = document.createElement("div");
+          box.id = "stickyMask";
+          document.body.append(box);
+        }
+        const grid = $("#grid");
+        const stuck = [...(grid?.querySelectorAll(":scope > .block.sticky") || [])]
+          .filter((el) => el.offsetParent && el.style.position !== "relative" && getComputedStyle(el).position === "sticky")
+          .map((el) => ({ el, r: el.getBoundingClientRect(), top: parseFloat(el.style.top) || 0 }))
+          .filter((o) => o.r.top <= o.top + 1.5 && o.r.bottom > 0) // collé (ou repoussé vers le haut en fin de page)
+          .sort((a, b) => a.r.left - b.r.left);
+        // regroupe les blocs collés voisins (écart horizontal ≤ 24 px, soit la gouttière de la grille)
+        const groups = [];
+        stuck.forEach((o) => {
+          const g = groups.find((g) => o.r.left <= g.r + 24 && o.r.right >= g.l - 24);
+          if (g) {
+            g.l = Math.min(g.l, o.r.left);
+            g.r = Math.max(g.r, o.r.right);
+            g.b = Math.max(g.b, o.r.bottom);
+            g.n++;
+          } else groups.push({ l: o.r.left, r: o.r.right, b: o.r.bottom, n: 1 });
+        });
+        const toph = $("#top")?.getBoundingClientRect().bottom || 0;
+        box.innerHTML = groups
+          .filter((g) => g.n > 1) // un bloc seul n'a pas besoin de masque (son liseré suffit)
+          .map((g) => `<div style="left:${Math.round(g.l) - 4}px;width:${Math.round(g.r - g.l) + 8}px;top:${Math.round(toph)}px;height:${Math.max(0, Math.round(g.b - toph) + 8)}px"></div>`)
+          .join("");
+      }
+      window.addEventListener(
+        "scroll",
+        () => {
+          cancelAnimationFrame(maskRaf);
+          maskRaf = requestAnimationFrame(maskSticky);
+        },
+        { passive: true },
+      );
       /* chaque bloc réserve dans la grille un nombre de rangées de 2 px égal à sa hauteur réelle */
       function setupMasonry(grid) {
         S.masonRO?.disconnect();
