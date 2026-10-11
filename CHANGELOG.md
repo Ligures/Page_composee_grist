@@ -8,10 +8,26 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 **Numérotation** : le widget est en développement, donc en version 0.
 - Le **dixième** (`0.X`) marque une évolution majeure.
-- Le chiffre suivant (`0.X.Y`) marque une évolution secondaire ou un ensemble de corrections.
+- Le chiffre suivant (`0.X.Y`) marque une évolution secondaire ou un ensemble de corrections. Il peut dépasser 9 : 0.8.9 est suivie de 0.8.10, puis 0.8.11…
 - La version 1.0 sera la première version stable.
 
 Les versions antérieures à 0.5.0 ont été développées avant la mise en dépôt du code. Leur numérotation est reconstituée a posteriori, et leurs dates ne sont pas connues précisément (septembre – début octobre 2026).
+
+---
+
+## [0.8.7] — Blocs figés empilés — 2026-10-11
+
+### Corrigé
+- **Plusieurs blocs « Figer à l'écran » dans une même colonne se recouvraient** : un graphique figé glissait sur la carte figée au-dessus de lui. Chaque bloc figé se colle désormais sous ceux qui le précèdent, et la position se recalcule au pliage, au dépliage et au redimensionnement.
+- **Manque de place** : un bloc figé qui n'a plus la place de montrer son en-tête et le début de son contenu n'est plus figé, et passe alors sous les blocs figés au lieu de les recouvrir.
+
+---
+
+## [0.8.6] — Diagnostic de la configuration — 2026-10-11
+
+### Ajouté
+- Dans le panneau de configuration, chaque vue retenue indique sa **table** Grist.
+- En bas du panneau, la ligne de diagnostic indique **l'heure de lecture de la structure** du document et le nombre de colonnes lues.
 
 ---
 
