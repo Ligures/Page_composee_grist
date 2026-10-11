@@ -1,13 +1,14 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.1)                 ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.3)                 ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
   cartes, listes déroulantes). Le widget ne copie rien : il RELIT la configuration
   des vues Grist (tables de métadonnées _grist_*) et en reproduit le rendu.
 
+  Développeur : Ligures.
   Fichier unique : HTML + CSS + JavaScript, sans étape de construction.
   Historique des versions : CHANGELOG.md · Guide d'utilisation : GUIDE-UTILISATEUR.md
   Hébergement : GitHub Pages, à côté de qpv-bretagne.geojson (couche QPV).
@@ -25,6 +26,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>UX widget grist</title>
+    <meta name="author" content="Ligures" />
     <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"
@@ -287,8 +289,50 @@
         stroke-linecap: round;
         stroke-linejoin: round;
       }
+      /* menu déroulant de la barre d'outils (ouvert par le bouton hamburger) */
+      .bar {
+        position: relative;
+      }
+      .tbmenu {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        min-width: 210px;
+        padding: 4px;
+        background: #fff;
+        border: 1px solid var(--bord);
+        border-radius: 6px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+      }
+      .tbmenu[hidden] {
+        display: none;
+      }
+      .tbmenu .tb {
+        border: 0;
+        width: 100%;
+        justify-content: flex-start;
+        gap: 10px;
+        padding: 0 12px;
+        height: 36px;
+        border-radius: 4px;
+      }
+      .tbmenu .tb .newdot {
+        position: static;
+        box-shadow: none;
+        margin-left: -4px;
+      }
+      .tbmenu .tb .lbl {
+        display: inline !important; /* libellés toujours visibles dans le menu */
+      }
+      #btnMenu[aria-expanded="true"] {
+        background: var(--bleu);
+        color: #fff;
+      }
       @media (max-width: 900px) {
-        .tb .lbl {
+        .bar > .tb .lbl {
           display: none;
         }
         .tb {
@@ -1018,6 +1062,28 @@
       td[data-kind="sel"][data-ed],
       dd[data-kind="sel"][data-ed] {
         padding-right: 18px;
+      }
+      /* Mention AIA (usage transparent de l'IA) en pied de page */
+      #aia {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 18px 0 4px;
+        padding-top: 8px;
+        border-top: 1px solid var(--bord);
+        font-size: 11px;
+        color: var(--muet);
+      }
+      #aia img {
+        flex: none;
+        border-radius: 4px;
+      }
+      #aia a {
+        color: inherit;
+      }
+      #help .aia-mini {
+        flex: none;
+        border-radius: 3px;
       }
       /* Fenêtre d'aide (Markdown du dépôt) */
       #help {
@@ -1823,6 +1889,12 @@
       <div class="bar">
         <h1 id="title"></h1>
         <span class="spacer"></span>
+        <!-- menu hamburger : les boutons de la barre d'outils sont regroupés dans une liste déroulante -->
+        <button class="tb" id="btnMenu" aria-haspopup="menu" aria-expanded="false" aria-controls="tbMenu" data-tip="Menu : actions de la page">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg
+          ><span class="lbl">Menu</span><span class="newdot" hidden></span>
+        </button>
+        <div class="tbmenu" id="tbMenu" role="menu" hidden>
         <button class="tb" id="btnFold" data-tip="Tout déplier">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9l5-5 5 5M7 15l5 5 5-5" /></svg
           ><span class="lbl">Tout déplier</span>
@@ -1881,6 +1953,7 @@
             /></svg
           ><span class="lbl">Configurer</span>
         </button>
+        </div>
       </div>
       <div id="status">Chargement…</div>
       <div id="filters"></div>
@@ -1896,11 +1969,23 @@
     </header>
     <div id="printhead"></div>
     <main id="grid" class="grid"></main>
+    <!-- Mention d'usage de l'IA (icônes de Martine Peters, CC BY-NC-SA 4.0). aia.png est déposé à côté du widget ;
+         s'il manque, l'image est masquée et seule la mention texte reste. -->
+    <footer id="aia">
+      <img src="aia.png" alt="AIA" height="36" onerror="this.remove()" />
+      <span
+        ><b>AIA</b> — Assisté par l'intelligence artificielle. Icône :
+        <a href="https://mpeters.uqo.ca/utilisation-transparente-de-lintelligence-artificielle/" target="_blank" rel="noopener"
+          >Martine Peters</a
+        >, CC BY-NC-SA 4.0</span
+      >
+    </footer>
     <div id="rcBack"></div>
     <div id="rc" role="dialog" aria-modal="true"></div>
     <div id="help" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
       <div class="hbox">
         <div class="hhead">
+          <img class="aia-mini" src="aia.png" alt="AIA – assisté par l'IA" title="AIA – assisté par l'intelligence artificielle" height="30" onerror="this.remove()" />
           <h3 id="helpTitle">Aide</h3>
           <nav class="htabs" role="tablist"></nav>
           <button class="btn" id="helpClose" title="Fermer (Échap)">✕</button>
@@ -1970,7 +2055,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.1"; // voir CHANGELOG.md
+      const VERSION = "0.8.3"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -2899,6 +2984,29 @@
       new ResizeObserver(() =>
         document.documentElement.style.setProperty("--barw", `${$(".bar").offsetWidth}px`),
       ).observe($(".bar"));
+      // menuToggle — Ouvre / ferme le menu hamburger de la barre d'outils.
+      function menuToggle(open = $("#tbMenu").hidden) {
+        $("#tbMenu").hidden = !open;
+        $("#btnMenu").setAttribute("aria-expanded", String(open));
+        tip.classList.remove("on");
+        if (open) $("#tbMenu .tb:not([hidden])")?.focus();
+      }
+      $("#btnMenu").addEventListener("click", (e) => {
+        e.stopPropagation();
+        menuToggle();
+      });
+      $("#tbMenu").addEventListener("click", (e) => {
+        if (e.target.closest(".tb")) menuToggle(false); // une action choisie ferme le menu
+      });
+      document.addEventListener("mousedown", (e) => {
+        if (!$("#tbMenu").hidden && !e.target.closest("#tbMenu, #btnMenu")) menuToggle(false);
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !$("#tbMenu").hidden) {
+          menuToggle(false);
+          $("#btnMenu").focus();
+        }
+      });
       // infobulle immédiate des boutons quand leur texte est masqué (écran réduit), au survol comme au toucher
       function tbTip(btn) {
         if (getComputedStyle(btn.querySelector(".lbl")).display !== "none") return;
@@ -5969,6 +6077,7 @@
         const dot = $("#btnHelp .newdot"),
           isNew = seenVersion() !== VERSION;
         dot.hidden = !isNew;
+        $("#btnMenu .newdot").hidden = !isNew; // visible aussi quand le menu est fermé
         $("#btnHelp").dataset.tip = isNew
           ? `Aide — nouvelle version ${VERSION} : voir les nouveautés`
           : "Aide : guide d'utilisation et nouveautés";
@@ -6003,7 +6112,7 @@
         const doc = docs.find((d) => d.id === tab) || docs[0];
         helpTab = doc.id;
         $("#help").hidden = false;
-        $("#helpTitle").textContent = `Aide — UX widget grist ${VERSION}`;
+        $("#helpTitle").textContent = `Aide — UX widget grist ${VERSION} · Ligures`;
         $("#help .htabs").innerHTML = docs
           .map((d) => `<button role="tab" data-htab="${d.id}" class="${d.id === doc.id ? "on" : ""}" aria-selected="${d.id === doc.id}">${esc(d.label)}</button>`)
           .join("");
@@ -6025,7 +6134,7 @@
         }
       }
       const closeHelp = () => ($("#help").hidden = true);
-      $("#btnHelp").addEventListener("click", () => openHelp(seenVersion() !== VERSION ? "news" : helpTab));
+      $("#btnHelp").addEventListener("click", () => openHelp("guide")); // le guide d'abord ; la pastille signale les nouveautés
       $("#helpClose").addEventListener("click", closeHelp);
       $("#help").addEventListener("click", (ev) => {
         if (ev.target.id === "help") return closeHelp(); // clic sur le fond
