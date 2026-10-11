@@ -1,13 +1,34 @@
 # Journal des modifications — UX widget grist
 
 Toutes les évolutions notables du widget sont consignées ici, de la plus récente à la plus ancienne.
-Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numérotation : `majeure.mineure.correctif`.
+Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
-Les versions antérieures à 0.9.0 ont été développées avant la mise en dépôt du code. Leur numérotation est reconstituée a posteriori, et leurs dates ne sont pas connues précisément (septembre – début octobre 2026).
+**Numérotation** : le widget est en développement, donc en version 0.
+- Le **dixième** (`0.X`) marque une évolution majeure.
+- Le chiffre suivant (`0.X.Y`) marque une évolution secondaire ou un ensemble de corrections.
+- La version 1.0 sera la première version stable.
+
+Les versions antérieures à 0.5.0 ont été développées avant la mise en dépôt du code. Leur numérotation est reconstituée a posteriori, et leurs dates ne sont pas connues précisément (septembre – début octobre 2026).
 
 ---
 
-## [1.0.0] — 2026-10-11
+## [0.8.1] — Aide intégrée — 2026-10-11
+
+### Ajouté
+- **Aide intégrée** : bouton **Aide** dans la barre d'outils, qui ouvre une fenêtre à onglets.
+  - **Guide** : le guide d'utilisation.
+  - **Nouveautés** : ce journal des modifications.
+  - **À propos** : le README, réservé aux administrateurs.
+- Le contenu est lu dans les fichiers Markdown du dépôt, à côté du widget : déposer une nouvelle version sur GitHub met l'aide à jour, sans rien recopier dans Grist.
+- Les liens internes fonctionnent : sommaires, ancres, et liens d'un document à l'autre.
+- **Pastille « nouvelle version »** sur le bouton Aide tant que l'utilisateur n'a pas consulté les nouveautés ; l'aide s'ouvre alors directement sur l'onglet Nouveautés. Le suivi se fait par navigateur.
+
+### Sécurité
+- Markdown mis en forme par marked 12.0.2 (version figée, empreinte SRI), puis nettoyé par DOMPurify.
+
+---
+
+## [0.8.0] — Nouveau nom et documentation — 2026-10-11
 
 ### Modifié
 - **Nouveau nom : « UX widget grist »** (anciennement « page composée »). Changent :
@@ -29,7 +50,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.13.0] — 2026-10-10
+## [0.7.0] — Filtre rapide et listes adaptatives — 2026-10-10
 
 ### Ajouté
 - **Filtre rapide par bloc** :
@@ -53,7 +74,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.12.0] — 2026-10-10
+## [0.6.2] — Code commenté et README — 2026-10-10
 
 ### Documentation
 - Code commenté :
@@ -65,7 +86,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.11.0] — 2026-10-10
+## [0.6.1] — IRIS et données Grist par zone — 2026-10-10
 
 ### Ajouté
 - **Zonage IRIS** : contours des IRIS des communes découpées, interrogés au service de la Géoplateforme IGN (`STATISTICALUNITS.IRISGE:iris_ge`).
@@ -86,7 +107,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.10.0] — 2026-10-09
+## [0.6.0] — Zonages et quartiers prioritaires — 2026-10-09
 
 ### Ajouté
 - **Zonages sous les points de carte** :
@@ -100,7 +121,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.9.0] — 2026-10-09
+## [0.5.0] — Hébergement, sécurité et configuration repensée — 2026-10-09
 
 ### Ajouté
 - **Hébergement sur GitHub Pages** : le widget est appelé par URL dans Grist.
@@ -126,7 +147,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.8.0]
+## [0.4.1] — Barre d'outils et smartphone
 
 ### Ajouté
 - Barre d'outils avec icônes et libellés, ces derniers masqués sur petit écran (infobulle) : Tout replier, Actualiser, Imprimer, Disposition, Configurer.
@@ -144,7 +165,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.7.0]
+## [0.4.0] — Mode Disposition et export
 
 ### Ajouté
 - **Mode Disposition** : déplacer les blocs par glisser-déposer et les redimensionner à la souris. Réservé aux administrateurs.
@@ -163,7 +184,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.6.0]
+## [0.3.0] — Édition selon les droits
 
 ### Ajouté
 - **Édition des champs selon les droits Grist**, dans les tableaux et les fiches :
@@ -179,7 +200,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.5.0]
+## [0.2.1] — Navigation et performance
 
 ### Ajouté
 - **Navigation entre pages** :
@@ -198,7 +219,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.4.0]
+## [0.2.0] — Configuration stockée, administration et cartes
 
 ### Ajouté
 - **Stockage de la configuration dans le document** (table `W_Composition`), qui survit aux mises à jour du code ; choix de la configuration quand plusieurs sont possibles.
@@ -216,7 +237,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.3.0]
+## [0.1.2] — Listes de sélection et mise en forme Grist
 
 ### Ajouté
 - **Listes de sélection intégrées** :
@@ -232,7 +253,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.2.0]
+## [0.1.1] — Graphiques avancés et mode ultracompact
 
 ### Ajouté
 - **Graphiques avancés** (widget Plotly de Grist), y compris les sources `gristsrc` et les séries multiples.
@@ -245,7 +266,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.1.0]
+## [0.1.0] — Prototype
 
 ### Ajouté
 - Première version : réaffichage sur une seule page de vues natives Grist (tableaux, fiches, graphiques), à partir de leur configuration lue dans les tables de métadonnées `_grist_*`.
