@@ -4,8 +4,8 @@ Widget personnalisé [Grist](https://www.getgrist.com/) qui rassemble sur **une 
 
 Le widget ne duplique rien. Il **relit la configuration des vues Grist** (tables de métadonnées `_grist_*`) et en reproduit le rendu. Cela comprend les colonnes affichées, le tri, les filtres, les liaisons entre vues, la mise en forme conditionnelle et la disposition des fiches. Quand une vue change dans Grist, la page suit.
 
-**Version actuelle : 1.0.0** — voir le [journal des modifications](CHANGELOG.md).
-Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md).
+**Version actuelle : 0.8.1** (en développement) — voir le [journal des modifications](CHANGELOG.md).
+Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), aussi accessible dans le widget par le bouton **Aide**.
 
 ---
 
@@ -69,6 +69,10 @@ Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md).
 - Impression / PDF.
 - Export CSV par bloc : séparateur `;`, ouverture directe dans Excel.
 
+**Aide intégrée**
+- Bouton **Aide** : guide, nouveautés et README (ce dernier réservé aux administrateurs), lus directement dans les fichiers du dépôt.
+- Pastille signalant une nouvelle version.
+
 ---
 
 ## Contenu du dépôt
@@ -77,9 +81,11 @@ Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md).
 |---|---|
 | `index.html` | Le widget (fichier unique : HTML, CSS, JavaScript), servi par défaut par GitHub Pages |
 | `qpv-bretagne.geojson` | Périmètres des quartiers prioritaires 2024 (22, 29, 35, 56), facultatif |
-| `README.md` | Ce document : installation et fonctionnement technique |
-| `GUIDE-UTILISATEUR.md` | Guide pour les utilisateurs et les administrateurs |
-| `CHANGELOG.md` | Journal des modifications |
+| `README.md` | Ce document : installation et fonctionnement technique (onglet « À propos » de l'aide) |
+| `GUIDE-UTILISATEUR.md` | Guide pour les utilisateurs et les administrateurs (onglet « Guide ») |
+| `CHANGELOG.md` | Journal des modifications (onglet « Nouveautés ») |
+
+Les trois fichiers Markdown sont lus par le widget : ils doivent rester à côté de `index.html`, avec ces noms.
 
 ---
 
@@ -193,6 +199,7 @@ Toutes sont chargées depuis un CDN, en version figée, avec empreinte d'intégr
 | Plotly | 2.35.2 | Graphiques avancés | Au premier graphique avancé |
 | DOMPurify | 3.2.6 | Nettoyage du HTML des étiquettes | Si une étiquette contient du HTML |
 | polygon-clipping | 0.15.7 | Fusion des communes en EPCI | Avec le zonage EPCI |
+| marked | 12.0.2 | Mise en forme de l'aide (Markdown) | À la première ouverture de l'aide |
 
 Police : Marianne.
 
@@ -213,6 +220,7 @@ Le fichier est commenté. Un **sommaire** en tête du script décrit les parties
   Rendu des blocs  renderTable, renderSingle, renderCards, renderChart,
                    renderAdvChart, renderMap (+ zonages, QPV, IRIS)
   Rendu principal  render() via scheduleRender()
+  Aide             openHelp, helpLoad          fichiers Markdown du dépôt
   Interactions, mode Disposition, export, configuration, navigation, démarrage (init)
 ```
 
@@ -225,7 +233,7 @@ Le fichier est commenté. Un **sommaire** en tête du script décrit les parties
 - Toute valeur issue des données ou de la configuration passe par `esc()` avant d'être insérée en HTML.
 - Une nouvelle bibliothèque est ajoutée à `LIBS`, avec sa version figée et son empreinte SRI.
 - Une nouvelle option de bloc est déclarée dans `renderConfig()`, avec une explication au survol.
-- Chaque version incrémente `VERSION` et ajoute une entrée au `CHANGELOG.md`.
+- Chaque version incrémente `VERSION` et ajoute une entrée au `CHANGELOG.md`. Les utilisateurs voient alors la pastille « nouvelle version » sur le bouton Aide.
 
 **Diagnostic** : la console du navigateur affiche une ligne `[UX widget] page « … » calculée en … ms`. Elle donne le nombre de blocs affichés, masqués ou non pris en charge, et la raison pour chaque bloc vide.
 
