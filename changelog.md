@@ -1,0 +1,253 @@
+# Journal des modifications — UX widget grist
+
+Toutes les évolutions notables du widget sont consignées ici, de la plus récente à la plus ancienne.
+Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Numérotation : `majeure.mineure.correctif`.
+
+Les versions antérieures à 0.9.0 ont été développées avant la mise en dépôt du code. Leur numérotation est reconstituée a posteriori, et leurs dates ne sont pas connues précisément (septembre – début octobre 2026).
+
+---
+
+## [1.0.0] — 2026-10-11
+
+### Modifié
+- **Nouveau nom : « UX widget grist »** (anciennement « page composée »). Changent :
+  - le fichier (`ux-widget-grist.html`) ;
+  - le titre ;
+  - le préfixe des messages de la console (`[UX widget]`) ;
+  - la clé de synchronisation des listes entre pages (`uxwg_sync_…`).
+- Le numéro de version est affiché en bas du panneau de configuration.
+
+### Documentation
+- Ajout de ce journal des modifications.
+- Ajout d'un guide d'utilisation (`GUIDE-UTILISATEUR.md`).
+- Mise à jour du `README.md`.
+
+### Migration
+- Mettre à jour l'URL du widget dans Grist si le fichier est renommé.
+- Les configurations enregistrées dans `W_Composition` sont conservées telles quelles.
+- Les sélections synchronisées en cours de session repartent de zéro, une seule fois.
+
+---
+
+## [0.13.0] — 2026-10-10
+
+### Ajouté
+- **Filtre rapide par bloc** :
+  - dans l'en-tête de chaque bloc, des boutons « Tous | valeur 1 | valeur 2… » filtrent ses lignes sur un champ choisi dans la configuration du bloc ;
+  - le choix du champ présente les champs de la vue, puis les autres colonnes de la table ;
+  - une valeur peut être sélectionnée à l'ouverture ;
+  - le filtre s'applique à l'affichage et à l'export CSV, sans modifier les liaisons ;
+  - la comparaison ignore les majuscules et les accents.
+- **Filtre rapide adaptatif** : selon la place dans l'en-tête, boutons côte à côte, bouton unique avec liste verticale, ou icône d'entonnoir (pleine si un filtre est actif).
+- **Listes de sélection à une seule entrée** (selon les droits) : elles sont masquées, mais leur sélection s'applique et figure dans le résumé imprimé.
+- **Smartphone** : les listes de sélection tiennent sur une seule ligne, sans libellé (repris en infobulle).
+- **Menu de navigation** : option « — ce widget — » pour les liens qui n'affichent qu'une configuration, quand toutes les configurations sont réunies dans une seule page Grist.
+
+### Corrigé
+- Un bloc sans aucune donnée restait affiché quand il avait un filtre rapide. Il n'est maintenu que si c'est le filtre lui-même qui l'a vidé.
+- La valeur à l'ouverture du filtre rapide n'était pas appliquée après enregistrement de la configuration.
+- Le menu signalait « page introuvable » pour des liens vers des pages Grist supprimées, alors qu'ils servent seulement à changer de configuration dans le widget.
+
+### Retiré
+- Le filtre rapide commun à toutes les pages, remplacé par le réglage par bloc.
+
+---
+
+## [0.12.0] — 2026-10-10
+
+### Documentation
+- Code commenté :
+  - en-tête de fichier ;
+  - sommaire du script (cycle de vie, stockage, schéma de configuration, règles à respecter) ;
+  - une ligne d'explication pour chaque fonction.
+- Code réindenté avec Prettier, sans changement de comportement (arbre syntaxique vérifié identique).
+- Premier `README.md`.
+
+---
+
+## [0.11.0] — 2026-10-10
+
+### Ajouté
+- **Zonage IRIS** : contours des IRIS des communes découpées, interrogés au service de la Géoplateforme IGN (`STATISTICALUNITS.IRISGE:iris_ge`).
+- **Couleur des zones selon une table Grist** reliée par code (code INSEE, SIREN d'EPCI, code IRIS) :
+  - dégradé pour un nombre, une couleur par valeur pour un texte ;
+  - « sans donnée » en gris.
+- **Commune déduite de la position des points** quand la colonne ne donne pas de code INSEE lisible, avec l'option explicite « position des points ».
+- Lecture d'un code INSEE porté par une référence imbriquée.
+- Listes de colonnes de la configuration classées par ordre alphabétique.
+- **Page vide** :
+  - le message « Aucune donnée, pas d'élément sélectionné » s'affiche, au lieu d'une page blanche ;
+  - le détail par bloc est écrit dans la console.
+
+### Corrigé
+- Bloc en plein écran réduit à sa barre de titre en mode « Empiler les blocs sans trous » (carte invisible).
+- Ascenseurs qui apparaissaient au survol des graphiques avancés, à cause d'un débordement de 4 px.
+- Rangée des listes de sélection inutilement rétrécie sous le menu des pages.
+
+---
+
+## [0.10.0] — 2026-10-09
+
+### Ajouté
+- **Zonages sous les points de carte** :
+  - communes ;
+  - EPCI, avec les contours des communes fusionnés (polygon-clipping) ;
+  - coloration selon le nombre de points ou la somme d'une colonne, avec légende.
+- **Quartiers prioritaires (QPV 2024)** :
+  - couche des périmètres (fichier `qpv-bretagne.geojson` : départements 22, 29, 35 et 56) ;
+  - repérage des points situés dans un QPV ou à moins de X m ;
+  - contour des points calculé selon la situation QPV, et infobulle.
+
+---
+
+## [0.9.0] — 2026-10-09
+
+### Ajouté
+- **Hébergement sur GitHub Pages** : le widget est appelé par URL dans Grist.
+- **Contour coloré des points de carte** : jusqu'à 3 couleurs choisies selon une colonne, avec les conditions `=`, `≠`, `<`, `≤`, `>`, `≥` et `contient`.
+- **Panneau de configuration refondu** :
+  - moitié de l'écran ;
+  - aperçu de la disposition fixe en haut ;
+  - sections encadrées ;
+  - explication de chaque option au survol ;
+  - position de défilement conservée.
+- **Menu de navigation** :
+  - les pages dont l'utilisateur ne peut lire aucune table sont masquées ;
+  - condition « visible si accès à une table », pour les règles d'accès par ligne.
+
+### Sécurité
+- HTML des étiquettes de carte nettoyé par DOMPurify ; textes des infobulles échappés.
+- Bibliothèques externes en versions figées, avec empreinte d'intégrité (SRI), servies par jsDelivr.
+- Liens du menu limités aux adresses `https://`.
+- Export CSV : neutralisation des cellules interprétables comme formules par Excel.
+
+### Corrigé
+- **Étiquette de carte différente de la carte native** : le mapping des colonnes, enregistré par numéro de colonne, n'était pas reconnu.
+
+---
+
+## [0.8.0]
+
+### Ajouté
+- Barre d'outils avec icônes et libellés, ces derniers masqués sur petit écran (infobulle) : Tout replier, Actualiser, Imprimer, Disposition, Configurer.
+- État des blocs à l'ouverture (auto, replié, déplié) ; blocs repliés mieux signalés.
+- Affichage adapté aux smartphones.
+
+### Modifié
+- Palette de couleurs de carte plus contrastée ; valeurs invalides en rouge, valeurs vides en gris.
+
+### Corrigé
+- Colonne Année trop large sur grand écran, illisible sur petit écran.
+- Graphique qui s'allongeait sans fin dans un bloc haut.
+- Bloc replié qui disparaissait en mode empilé.
+- Blocs côte à côte qui se chevauchaient sur smartphone.
+
+---
+
+## [0.7.0]
+
+### Ajouté
+- **Mode Disposition** : déplacer les blocs par glisser-déposer et les redimensionner à la souris. Réservé aux administrateurs.
+- **Export** : impression / PDF de la page, et CSV par bloc (séparateur `;`, ouverture directe dans Excel).
+- Tri et filtre par colonne depuis les en-têtes des tableaux ; champ de recherche par bloc.
+- Listes de fiches, et fiche en mode liste ; largeur des fiches réglable.
+- Colonnes ajustées sans ascenseur horizontal, colonnes figées, largeurs de la vue Grist ou automatiques.
+- Mode « Empiler les blocs sans trous » (masonry).
+
+### Retiré
+- Export Excel (le CSV et l'impression suffisent).
+
+### Corrigé
+- Blocs qui se chevauchaient ou ne se déplaçaient pas en mode Disposition.
+- Boutons de filtre qui élargissaient les colonnes.
+
+---
+
+## [0.6.0]
+
+### Ajouté
+- **Édition des champs selon les droits Grist**, dans les tableaux et les fiches :
+  - texte, nombres, dates, choix, références et références multiples ;
+  - sélecteurs intégrés ;
+  - respect des conditions de liste déroulante ;
+  - lecteurs en lecture seule.
+- Sélection de ligne soulignée, survol des cellules éditables teinté.
+
+### Corrigé
+- Colonnes qui bougeaient au survol ou à l'édition.
+- Double-clic impossible pendant le rafraîchissement.
+
+---
+
+## [0.5.0]
+
+### Ajouté
+- **Navigation entre pages** :
+  - menu commun ;
+  - ouverture en mode page unique ;
+  - changement de page instantané dans le widget.
+- **Performance** :
+  - préchargement des tables en parallèle et des autres pages du menu ;
+  - mise en cache ;
+  - rendu progressif des grands tableaux ;
+  - tri accéléré (Intl.Collator) ;
+  - rendu interrompu quand un rendu plus récent démarre.
+
+### Corrigé
+- Page bloquée par un cycle de liaisons entre vues.
+
+---
+
+## [0.4.0]
+
+### Ajouté
+- **Stockage de la configuration dans le document** (table `W_Composition`), qui survit aux mises à jour du code ; choix de la configuration quand plusieurs sont possibles.
+- **Accès à la configuration réservé aux propriétaires** : table `W_Admin` et témoin `_Securite`.
+- **Cartes** :
+  - widget carte Grist rendu avec Leaflet ;
+  - Lambert 93 et virgules décimales acceptés ;
+  - couleurs selon une colonne ;
+  - contours des communes.
+- Plein écran par bloc ; en-tête collant ; tableaux sans limite de lignes.
+
+### Corrigé
+- Configuration qui revenait toujours à la première après mise à jour du code.
+- Carte grise au premier affichage.
+
+---
+
+## [0.3.0]
+
+### Ajouté
+- **Listes de sélection intégrées** :
+  - les listes déroulantes de la page s'affichent dans l'en-tête et pilotent les blocs ;
+  - regroupement (par exemple les écoles par commune) et ordre réglables ;
+  - synchronisation entre pages par identifiant commun ;
+  - navigation au clavier.
+- **Mise en forme reprise de Grist** : gras, couleurs, règles conditionnelles de cellule et de ligne, pastilles des choix, ordre et disposition des champs des fiches.
+- Descriptions de colonnes en infobulle ; en-têtes centrés.
+
+### Corrigé
+- Tri des listes par commune puis par école.
+
+---
+
+## [0.2.0]
+
+### Ajouté
+- **Graphiques avancés** (widget Plotly de Grist), y compris les sources `gristsrc` et les séries multiples.
+- **Mode ultracompact** : blocs ajustés à leurs données ; en-têtes allégés, informations en infobulle.
+- Contrôle de la position des blocs : colonne de départ, hauteur en rangées.
+
+### Corrigé
+- Pages affichées « (sans nom) ».
+- Graphiques limités à l'axe X ou vides.
+
+---
+
+## [0.1.0]
+
+### Ajouté
+- Première version : réaffichage sur une seule page de vues natives Grist (tableaux, fiches, graphiques), à partir de leur configuration lue dans les tables de métadonnées `_grist_*`.
+- Liaisons entre vues (filtre, curseur, tables de synthèse).
+- Grille de 6 colonnes et panneau de configuration.
