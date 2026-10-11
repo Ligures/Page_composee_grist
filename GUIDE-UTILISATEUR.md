@@ -139,7 +139,7 @@ Les actions **Disposition** et **Configurer** du menu ☰ n'apparaissent qu'aux 
 | Taille | Hauteur maximale ; au-delà, le contenu défile dans le bloc |
 | À l'ouverture | Bloc replié ou déplié à l'arrivée sur la page |
 | À la ligne | Le bloc commence une nouvelle rangée |
-| Figer à l'écran | Le bloc reste visible pendant le défilement d'un bloc voisin |
+| Figer à l'écran | Le bloc reste visible pendant le défilement d'un bloc voisin. Plusieurs blocs figés d'une même colonne s'empilent ; un bloc qui n'a plus la place de s'afficher sous les autres défile normalement, sous eux |
 | Édition des champs | Autorise la modification des valeurs (droits Grist respectés) |
 | Afficher les champs vides | Pour les fiches de ce bloc |
 | Largeur des colonnes | Ajustées (sans ascenseur horizontal), celles de Grist, ou automatiques |
