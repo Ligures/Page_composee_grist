@@ -1,10 +1,13 @@
 # UX widget grist
 
+<img src="aia.png" alt="AIA" width="40" align="left" /> **AIA — Assisté par l'intelligence artificielle.** Ce widget et sa documentation ont été réalisés avec l'assistance d'une IA, sous la direction et avec la validation de leur auteur. Icône : [Martine Peters](https://mpeters.uqo.ca/utilisation-transparente-de-lintelligence-artificielle/), CC BY-NC-SA 4.0.
+<br clear="left" />
+
 Widget personnalisé [Grist](https://www.getgrist.com/) qui rassemble sur **une seule page, condensée et lisible**, plusieurs vues natives d'un document : tableaux, fiches, listes de fiches, graphiques natifs et avancés, cartes et listes déroulantes.
 
 Le widget ne duplique rien. Il **relit la configuration des vues Grist** (tables de métadonnées `_grist_*`) et en reproduit le rendu. Cela comprend les colonnes affichées, le tri, les filtres, les liaisons entre vues, la mise en forme conditionnelle et la disposition des fiches. Quand une vue change dans Grist, la page suit.
 
-**Version actuelle : 0.8.1** (en développement) — voir le [journal des modifications](CHANGELOG.md).
+**Version actuelle : 0.8.3** (en développement) · Développeur : **Ligures** — voir le [journal des modifications](CHANGELOG.md).
 Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), aussi accessible dans le widget par le bouton **Aide**.
 
 ---
@@ -70,7 +73,7 @@ Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), 
 - Export CSV par bloc : séparateur `;`, ouverture directe dans Excel.
 
 **Aide intégrée**
-- Bouton **Aide** : guide, nouveautés et README (ce dernier réservé aux administrateurs), lus directement dans les fichiers du dépôt.
+- **Aide** (dans le menu ☰) : guide, nouveautés et README (ce dernier réservé aux administrateurs), lus directement dans les fichiers du dépôt.
 - Pastille signalant une nouvelle version.
 
 ---
@@ -81,6 +84,7 @@ Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), 
 |---|---|
 | `index.html` | Le widget (fichier unique : HTML, CSS, JavaScript), servi par défaut par GitHub Pages |
 | `qpv-bretagne.geojson` | Périmètres des quartiers prioritaires 2024 (22, 29, 35, 56), facultatif |
+| `aia.png` | Icône AIA (« assisté par l'IA ») de Martine Peters, affichée en pied de page et dans l'aide |
 | `README.md` | Ce document : installation et fonctionnement technique (onglet « À propos » de l'aide) |
 | `GUIDE-UTILISATEUR.md` | Guide pour les utilisateurs et les administrateurs (onglet « Guide ») |
 | `CHANGELOG.md` | Journal des modifications (onglet « Nouveautés ») |
@@ -251,8 +255,9 @@ Le fichier est commenté. Un **sommaire** en tête du script décrit les parties
 
 ## Licence et sources des données
 
-- **Code** : licence à préciser (par exemple MIT ou Licence Ouverte / Etalab 2.0).
+- **Code** : © Ligures, licence à préciser (par exemple MIT ou Licence Ouverte / Etalab 2.0).
 - **QPV 2024** : © ANCT, [Licence Ouverte 2.0](https://www.etalab.gouv.fr/licence-ouverte-open-licence/).
 - **Contours des communes et EPCI** : [API Découpage administratif](https://geo.api.gouv.fr), IGN / INSEE.
 - **Contours IRIS** : © IGN – INSEE, via la Géoplateforme.
 - **Fond de carte** : © contributeurs [OpenStreetMap](https://www.openstreetmap.org/copyright).
+- **Icône AIA** : © 2023 Martine Peters, [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — [Acronymes et icônes pour une utilisation transparente de l'IA](https://mpeters.uqo.ca/utilisation-transparente-de-lintelligence-artificielle/).
