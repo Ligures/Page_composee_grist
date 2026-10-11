@@ -108,6 +108,7 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 ### Sur smartphone
 
 - Les blocs s'affichent les uns sous les autres.
+- Le menu des pages est regroupé derrière un bouton, en haut à gauche, qui porte le nom de la page affichée (icône de pages, ▾). Le menu ☰ des actions reste à droite.
 - Les listes de sélection tiennent sur une seule ligne. Leur nom n'est plus affiché : la valeur choisie suffit à les reconnaître, et le texte complet apparaît à l'ouverture de la liste.
 
 ---
@@ -213,6 +214,14 @@ Section **5. Navigation entre pages**. Ce réglage est commun à toutes les conf
   - page Grist, ou **— ce widget —** ;
   - configuration à afficher ;
   - visibilité : *tous*, ou *si accès à* une table (le lien n'apparaît qu'aux personnes qui voient au moins une ligne de cette table).
+
+### Apparence
+
+Section **4. Affichage**, **Apparence (tout le document)** :
+- **Style État (DSFR)** : police Marianne et bleu France. Réservé aux **services de l'État** par les conditions d'utilisation du Système de design de l'État.
+- **Style neutre** : police du système et bleu neutre, pour toute autre structure (collectivité, association, entreprise…).
+
+À la première ouverture du widget dans un document, l'administrateur est invité à choisir. Le choix vaut pour toutes les pages du document.
 
 ### Enregistrer
 
