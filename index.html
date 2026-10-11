@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.5)                 ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.7)                 ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -2027,7 +2027,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.5"; // voir CHANGELOG.md
+      const VERSION = "0.8.7"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -2223,7 +2223,9 @@
         } catch {
           m.visibleTables = null;
         }
+        m.loadedAt = new Date().toLocaleTimeString("fr-FR"); // heure de lecture de la structure (diagnostic)
         m.diag =
+          `Structure lue à ${m.loadedAt} · ${cols.length} colonnes · ` +
           `Diagnostic — _grist_Pages : ${pages.length} lignes, colonnes [${Object.keys(pages[0] || {}).join(", ")}] · ` +
           `_grist_Views : ${views.length} · widgets : ${sections.length} · pages reliées à des widgets : ` +
           `${m.pages.filter((p) => m.sectionsByView.has(p.viewId)).length}`;
@@ -3006,6 +3008,41 @@
         },
         { passive: true },
       );
+      /* Blocs « figés à l'écran » : sans réglage, ils se colleraient tous au même endroit sous l'en-tête et se
+         recouvriraient (un graphique figé glisserait sur la carte figée au-dessus). Chaque bloc figé se colle donc
+         sous ceux, figés aussi, qui le précèdent dans la même colonne. Au-delà de 60 % de la hauteur de l'écran,
+         un bloc n'est plus figé, pour laisser de la place au défilement. */
+      let stickyRO = null,
+        stickyRaf = 0;
+      // stackSticky — Calcule la position de collage (top) de chaque bloc figé, colonne par colonne.
+      function stackSticky(grid = $("#grid")) {
+        stickyRO?.disconnect();
+        const els = [...grid.querySelectorAll(":scope > .block.sticky")];
+        if (!els.length) return;
+        const apply = () => {
+          const toph = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--toph")) || 0;
+          const gap = 8,
+            placed = [];
+          for (const el of els) {
+            const r = el.getBoundingClientRect();
+            const above = placed.filter((p) => p.l < r.right - 1 && p.r > r.left + 1); // même colonne (chevauchement horizontal)
+            const top = above.reduce((t, p) => Math.max(t, p.top + p.h + gap), toph + 6);
+            const tooLow = top > window.innerHeight * 0.6;
+            el.style.position = tooLow ? "relative" : "";
+            el.style.top = tooLow ? "" : `${top}px`;
+            el.style.maxHeight = tooLow ? "" : `calc(100vh - ${Math.round(top + 8)}px)`;
+            if (!tooLow) placed.push({ l: r.left, r: r.right, top, h: el.offsetHeight });
+          }
+        };
+        apply();
+        stickyRO = new ResizeObserver(() => {
+          cancelAnimationFrame(stickyRaf);
+          stickyRaf = requestAnimationFrame(apply); // pliage, dépliage, contenu chargé
+        });
+        els.forEach((el) => stickyRO.observe(el));
+        stickyRO.observe($("#top")); // hauteur de l'en-tête
+      }
+      window.addEventListener("resize", () => stackSticky());
       /* chaque bloc réserve dans la grille un nombre de rangées de 2 px égal à sa hauteur réelle */
       function setupMasonry(grid) {
         S.masonRO?.disconnect();
@@ -5435,6 +5472,7 @@
         fitQf(grid); // filtres rapides : présentation selon la place
         freezeColumns(grid);
         setupMasonry(grid);
+        stackSticky(grid); // blocs figés empilés les uns sous les autres
         updateFoldButton();
         if (!S.prefetchedOthers) {
           S.prefetchedOthers = true;
@@ -6413,7 +6451,7 @@
                 `<select data-f="${f}" data-i="${i}">${opts.map(([v, l]) => `<option value="${v}" ${String(v) === String(cur) ? "selected" : ""}>${l}</option>`).join("")}</select>`;
               const isFiche = ["single", "detail", "record"].includes(s.parentKey),
                 isMap = s.parentKey === "custom" && isMapSection(s);
-              return `<li><span title="${esc(secLabel(b.id))}">${esc(secLabel(b.id))} <small>— ${esc(m.pageOfView.get(s.parentId) || "")}</small></span>
+              return `<li><span title="${esc(secLabel(b.id))}">${esc(secLabel(b.id))} <small>— ${esc(m.pageOfView.get(s.parentId) || "")} · table ${esc(m.tables.get(s.tableRef)?.tableId || "?")}</small></span>
       <button class="icon-btn" data-up="${i}" title="Placer avant la vue précédente">↑</button><button class="icon-btn" data-down="${i}" title="Placer après la vue suivante">↓</button>
       <button class="icon-btn" data-rm="${i}" title="Retirer de la page (la vue Grist n'est pas supprimée)">✕</button>
       ${
