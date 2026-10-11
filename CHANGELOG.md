@@ -19,7 +19,10 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ### Corrigé
 - **Plusieurs blocs « Figer à l'écran » dans une même colonne se recouvraient** : un graphique figé glissait sur la carte figée au-dessus de lui. Chaque bloc figé se colle désormais sous ceux qui le précèdent, et la position se recalcule au pliage, au dépliage et au redimensionnement.
-- **Manque de place** : un bloc figé qui n'a plus la place de montrer son en-tête et le début de son contenu n'est plus figé, et passe alors sous les blocs figés au lieu de les recouvrir.
+- **Bloc déplié** : il reste figé comme replié. Sa hauteur est limitée à la place restante à l'écran, et son contenu défile à l'intérieur.
+- **Manque de place** : un bloc figé qui n'a plus la place de montrer son en-tête n'est plus figé. Il passe alors sous les blocs figés au lieu de les recouvrir.
+- **Interstices comblés** : un liseré blanc entre les blocs figés, et sous l'en-tête, masque le contenu qui défile dessous. Une ombre légère marque la limite basse des blocs figés.
+- **En-têtes de colonnes toujours visibles** quand on fait défiler un tableau dans son cadre, y compris dans un bloc figé, un bloc sur plusieurs rangées ou en plein écran.
 
 ---
 
