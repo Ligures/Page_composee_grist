@@ -11,7 +11,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 
 ### Modifié
 - **Nouveau nom : « UX widget grist »** (anciennement « page composée »). Changent :
-  - le fichier (`ux-widget-grist.html`) ;
+  - le dépôt (`ux-widget-grist`), avec le widget servi à sa racine (`index.html`) ;
   - le titre ;
   - le préfixe des messages de la console (`[UX widget]`) ;
   - la clé de synchronisation des listes entre pages (`uxwg_sync_…`).
@@ -23,7 +23,7 @@ Les versions antérieures à 0.9.0 ont été développées avant la mise en dép
 - Mise à jour du `README.md`.
 
 ### Migration
-- Mettre à jour l'URL du widget dans Grist si le fichier est renommé.
+- Mettre à jour l'URL du widget dans Grist : `https://<compte>.github.io/ux-widget-grist/`.
 - Les configurations enregistrées dans `W_Composition` sont conservées telles quelles.
 - Les sélections synchronisées en cours de session repartent de zéro, une seule fois.
 
