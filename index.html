@@ -938,19 +938,20 @@
       tbody tr.sel td {
         box-shadow: inset 0 -2px 0 var(--bleu);
       }
-      /* références multiples / listes de choix : une valeur par ligne, chacune tronquée si besoin */
+      /* références multiples / listes de choix : les valeurs se suivent sur la ligne tant qu'il y a la place,
+         puis passent à la ligne ; une valeur plus large que la colonne est tronquée */
       td.multi {
         white-space: normal;
       }
       td.multi .chip {
-        display: block;
-        width: fit-content;
+        display: inline-block;
+        vertical-align: top;
         max-width: 100%;
         box-sizing: border-box;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        margin: 1px 0;
+        margin: 1px 4px 1px 0;
       }
       .fiche dd.styled {
         padding: 0 4px;
@@ -1109,6 +1110,55 @@
         align-items: center;
         justify-content: center;
         padding: 12px;
+      }
+      #fmodal {
+        position: fixed;
+        inset: 0;
+        z-index: 36;
+        background: rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+      }
+      #fmodal[hidden] {
+        display: none;
+      }
+      #fmodal .fmbox {
+        background: #fff;
+        border-radius: 8px;
+        width: min(760px, 100%);
+        height: min(860px, 100%);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      }
+      #fmodal .hhead {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--bord);
+      }
+      #fmodal h3 {
+        margin: 0;
+        font-size: 15px;
+        color: var(--bleu);
+        flex: 1;
+      }
+      #fmodal .fmmsg {
+        color: #18753c;
+        font-weight: 600;
+        font-size: 13px;
+      }
+      #fmodal a.btn {
+        text-decoration: none;
+      }
+      #fmFrame {
+        flex: 1;
+        border: 0;
+        width: 100%;
       }
       #help[hidden] {
         display: none;
@@ -2037,6 +2087,19 @@
       </div>
     </div>
 
+    <!-- formulaire Grist ouvert dans une fenêtre (0.8.8) -->
+    <div id="fmodal" role="dialog" aria-modal="true" aria-labelledby="fmTitle" hidden>
+      <div class="fmbox">
+        <div class="hhead">
+          <h3 id="fmTitle">Formulaire</h3>
+          <span class="fmmsg" aria-live="polite"></span>
+          <a class="btn" id="fmTab" target="_blank" rel="noopener noreferrer" title="Ouvrir le formulaire dans un nouvel onglet">↗</a>
+          <button class="btn" id="fmClose" title="Fermer (Échap)">✕</button>
+        </div>
+        <iframe id="fmFrame" title="Formulaire" referrerpolicy="no-referrer"></iframe>
+      </div>
+    </div>
+
     <div id="config" hidden>
       <div class="panel" id="panel"></div>
     </div>
@@ -2851,6 +2914,28 @@
       function qfCur(b) {
         return S.qf[b.id] !== undefined ? S.qf[b.id] : b.qfDefault || "";
       }
+      // qfSync — Applique la valeur choisie à tous les blocs de la page dont le filtre rapide porte sur le même
+      //   champ (même identifiant de colonne ou même libellé) : clic milieu ou Maj+clic sur une valeur.
+      function qfSync(fromId, v) {
+        const src = S.cfg.blocks.find((x) => x.id === fromId),
+          srcInfo = src && getInfo(src.id),
+          col = src && srcInfo && qfCol(src, srcInfo);
+        if (!col) return;
+        let n = 0;
+        for (const b of S.cfg.blocks) {
+          const info = getInfo(b.id),
+            c = info && qfCol(b, info);
+          if (c && (c.colId === col.colId || (c.label && c.label === col.label))) {
+            S.qf[b.id] = v;
+            n++;
+          }
+        }
+        qfClose();
+        scheduleRender();
+        // message après le rendu (qui efface la ligne d'état)
+        setTimeout(() => status(`Filtre « ${col.label || col.colId} » : ${v || "Tous"} — appliqué à ${n} bloc${n > 1 ? "s" : ""}`), 400);
+        setTimeout(() => status(""), 3500);
+      }
       // qfValuesOf — Valeurs connues d'un champ pour la configuration : choix déclarés dans Grist + données déjà chargées.
       function qfValuesOf(cols) {
         const vals = new Set();
@@ -2866,29 +2951,56 @@
       function qfApply(b, info, rows) {
         const col = qfCol(b, info),
           v = qfCur(b);
-        return col && v ? rows.filter((r) => qfSame(qfText(col, r), v)) : rows;
+        if (!col || !v) return rows;
+        const texts = rows.map((r) => qfText(col, r));
+        if (texts.some((t) => qfSame(t, v))) return rows.filter((r, i) => qfSame(texts[i], v)); // valeur présente : égalité
+        // valeur absente de ce bloc (filtre synchronisé depuis un autre bloc) : on rapproche par le début du texte,
+        // mot entier. « Privé » garde « Privé sous contrat » et « Privé hors contrat » ; à l'inverse,
+        // « Privé sous contrat » garde « Privé ».
+        const n = qfNorm(v);
+        return rows.filter((r, i) => {
+          const t = qfNorm(texts[i]);
+          return t.startsWith(`${n} `) || n.startsWith(`${t} `);
+        });
       }
+      // qfNorm — Texte sans majuscules ni accents, espaces simplifiés (pour le rapprochement par le début).
+      const qfNorm = (x) =>
+        String(x)
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .replace(/\s+/g, " ")
+          .trim();
       // qfHtml — Sélecteur de l'en-tête : boutons « Tous | valeurs » (liste déroulante au-delà de 4 valeurs).
       function qfHtml(b, info, allRows) {
         const col = qfCol(b, info);
         if (!col) return "";
         const cur = qfCur(b);
         const vals = [...new Set(allRows.map((r) => qfText(col, r)))].sort(COLL.compare);
-        if (cur && !vals.some((x) => qfSame(x, cur))) vals.push(cur);
-        if (vals.length < 2 && !cur) return ""; // une seule valeur : rien à filtrer
-        const tip = `Filtrer ce bloc sur « ${col.label || col.colId} »`;
+        // valeur synchronisée absente de ce bloc (« Privé » alors que le bloc a « Privé sous contrat »…) :
+        // pas de bouton supplémentaire ; les valeurs rapprochées sont surlignées (voir qfApply)
+        const exact = !cur || vals.some((x) => qfSame(x, cur));
+        const isOn = (v) =>
+          exact ? qfSame(v, cur) : qfNorm(v).startsWith(`${qfNorm(cur)} `) || qfNorm(cur).startsWith(`${qfNorm(v)} `);
+        // une seule valeur dans le bloc : le filtre ne sert à rien (« Public » = « Tous »), sauf si une valeur
+        // différente lui a été appliquée (synchronisation) : il reste alors affiché pour pouvoir revenir à « Tous »
+        if (vals.length < 2 && (!cur || vals.every(isOn))) return "";
+        const name = col.label || col.colId;
+        const tip = `Filtrer ce bloc sur « ${name} »`;
+        // aide au survol de chaque valeur : clic sur ce bloc, clic milieu (ou Maj+clic) sur tous les blocs
+        const sync = `\nClic milieu (ou Maj+clic) : appliquer à tous les blocs de la page filtrés sur « ${name} »`;
         if (vals.length > 4)
-          return `<select class="qfs" data-qfs="${b.id}" title="${esc(tip)}"><option value="">${esc(col.label || col.colId)} : tous</option>${vals
-            .map((v) => `<option value="${esc(v)}" ${cur && qfSame(v, cur) ? "selected" : ""}>${esc(v)}</option>`)
-            .join("")}</select>`;
+          return `<select class="qfs" data-qfs="${b.id}" title="${esc(tip + "\nClic milieu sur la liste : appliquer la valeur choisie à tous les blocs de la page filtrés sur « " + name + " »")}"><option value="">${esc(col.label || col.colId)} : tous</option>${
+            exact ? "" : `<option value="${esc(cur)}" selected>${esc(cur)} (${vals.filter(isOn).length} valeurs)</option>`
+          }${vals.map((v) => `<option value="${esc(v)}" ${cur && exact && qfSame(v, cur) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`;
         // trois présentations, choisies par fitQf() selon la place dans l'en-tête :
         //   « full » boutons côte à côte · « compact » seule l'option active, les autres en liste au clic
         //   · « icon » icône de filtre (pastille si un filtre est actif), liste au clic
-        const label = cur ? vals.find((x) => qfSame(x, cur)) || cur : "Tous";
+        const label = cur ? vals.find((x) => qfSame(x, cur)) || cur : "Tous"; // valeur rapprochée : son propre texte
         return `<span class="qf full${cur ? " active" : ""}" title="${esc(tip)}">
           <button type="button" class="qf-cur" data-qftog="${b.id}" aria-haspopup="true" aria-label="${esc(tip)} : ${esc(label)}">${QF_ICON}<span class="qf-lab">${esc(label)}</span><span class="qf-caret">▾</span></button>
           <span class="qf-opts">${[["", "Tous"], ...vals.map((v) => [v, v])]
-            .map(([v, l]) => `<button type="button" data-qf="${b.id}" data-qv="${esc(v)}" class="${(v ? qfSame(v, cur) : !cur) ? "on" : ""}">${esc(l)}</button>`)
+            .map(([v, l]) => `<button type="button" data-qf="${b.id}" data-qv="${esc(v)}" class="${(v ? cur && isOn(v) : !cur) ? "on" : ""}" title="${esc(`Clic : ${v ? `n'afficher que « ${l} »` : "tout afficher"} dans ce bloc${sync}`)}">${esc(l)}</button>`)
             .join("")}</span></span>`;
       }
 
@@ -2961,7 +3073,7 @@
           for (const tr of rows) {
             const td = tr.children[i];
             if (!td) continue;
-            // liste de valeurs : une valeur par ligne, la largeur se règle sur la plus longue
+            // liste de valeurs : la largeur minimale se règle sur la plus longue (les autres se suivent s'il reste de la place)
             const parts = td.classList.contains("multi")
               ? [...td.querySelectorAll(".chip")].map((c) => c.textContent.trim())
               : [td.textContent.trim()];
@@ -3035,10 +3147,93 @@
           .filter((f) => safeBase(f.url))
           .map(
             (f) =>
-              `<a class="tb formlink" href="${esc(safeBase(f.url))}" target="_blank" rel="noopener noreferrer" data-tip="${esc(f.tip || `${f.label || "Formulaire"} : ouvre le formulaire dans un nouvel onglet`)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6zM9 9h6M9 13h6M9 17h4" /></svg><span class="lbl">${esc(f.label || "Formulaire")}</span></a>`,
+              `<a class="tb formlink" href="${esc(safeBase(f.url))}" target="_blank" rel="noopener noreferrer"${f.tab ? "" : ` data-fmodal="${esc(f.label || "Formulaire")}"`} data-tip="${esc(f.tip || `${f.label || "Formulaire"} : ${f.tab ? "ouvre le formulaire dans un nouvel onglet" : "ouvre le formulaire"}`)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6zM9 9h6M9 13h6M9 17h4" /></svg><span class="lbl">${esc(f.label || "Formulaire")}</span></a>`,
           )
           .join("");
       }
+      /* Formulaire dans une fenêtre : il se ferme avec ✕, Échap ou un clic à côté, et tout seul après l'envoi.
+         L'envoi est repéré de deux façons, car le formulaire vient d'un autre site (son contenu est illisible) :
+         - le cadre change de page (formulaire réglé dans Grist pour « rediriger après l'envoi ») ;
+         - une nouvelle ligne apparaît dans la table du formulaire (si l'utilisateur peut la lire). */
+      const FM = { timer: 0, loads: 0, done: false };
+      // formTables — Tables où arrivent les réponses : celle du formulaire publié (…/forms/clé/N), ou celles
+      // des vues d'une page du document (…/p/N), si le lien vise bien ce document.
+      async function formTables(url) {
+        const m = S.meta;
+        const sec = Number(/\/forms\/[^/]+\/(\d+)/.exec(url)?.[1]);
+        if (sec) return [m?.tables.get(m.sections.get(sec)?.tableRef)?.tableId].filter(Boolean);
+        const pm = /\/(?:doc\/)?([A-Za-z0-9]{8,})(?:\/[^/?#]*)?\/p\/(\d+)/.exec(url);
+        if (!pm || !m) return [];
+        const docId = /\/doc\/([^/?#]+)/.exec(await guessDocUrl())?.[1] || "";
+        if (!docId || !(docId.startsWith(pm[1]) || pm[1].startsWith(docId))) return []; // autre document
+        return [
+          ...new Set((m.sectionsByView.get(Number(pm[2])) || []).map((x) => m.tables.get(x.tableRef)?.tableId).filter(Boolean)),
+        ];
+      }
+      // formRows — Empreinte des tables surveillées (nombre de lignes et plus grand identifiant de chacune).
+      async function formRows(tids) {
+        if (!tids?.length) return null;
+        const out = [];
+        for (const tid of tids) {
+          try {
+            const ids = (await grist.docApi.fetchTable(tid)).id || [];
+            out.push(`${ids.length}:${Math.max(0, ...ids)}`);
+          } catch {
+            out.push("?"); // table non lisible
+          }
+        }
+        return out.every((x) => x === "?") ? null : out.join("|");
+      }
+      async function openFormModal(url, label) {
+        const m = $("#fmodal"),
+          fr = $("#fmFrame");
+        FM.loads = 0;
+        FM.done = false;
+        $("#fmTitle").textContent = label;
+        $("#fmTab").href = url;
+        $("#fmodal .fmmsg").textContent = "";
+        fr.src = url;
+        m.hidden = false;
+        $("#fmClose").focus();
+        clearInterval(FM.timer);
+        const tids = await formTables(url);
+        const base = await formRows(tids);
+        if (base && !m.hidden)
+          FM.timer = setInterval(async () => {
+            const now = await formRows(tids);
+            if (now && now !== base) formSubmitted();
+          }, 2000);
+      }
+      function closeFormModal() {
+        clearInterval(FM.timer);
+        $("#fmodal").hidden = true;
+        $("#fmFrame").src = "about:blank";
+        if (FM.done) refreshAll(); // la nouvelle réponse apparaît dans la page
+      }
+      function formSubmitted() {
+        if (FM.done || $("#fmodal").hidden) return;
+        FM.done = true;
+        clearInterval(FM.timer);
+        $("#fmodal .fmmsg").textContent = "✓ Réponse envoyée";
+        setTimeout(() => !$("#fmodal").hidden && closeFormModal(), 1500); // le temps de lire le message de Grist
+      }
+      $("#fmFrame").addEventListener("load", () => {
+        if ($("#fmFrame").src === "about:blank" || $("#fmodal").hidden) return;
+        if (++FM.loads >= 2) formSubmitted(); // 2e page chargée : redirection après l'envoi
+      });
+      $("#fmClose").addEventListener("click", closeFormModal);
+      $("#fmodal").addEventListener("mousedown", (e) => {
+        if (e.target.id === "fmodal") closeFormModal(); // clic à côté de la fenêtre
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !$("#fmodal").hidden) closeFormModal();
+      });
+      $("#forms").addEventListener("click", (e) => {
+        const a = e.target.closest("a[data-fmodal]");
+        if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return; // Ctrl+clic : nouvel onglet
+        e.preventDefault();
+        openFormModal(a.href, a.dataset.fmodal);
+      });
       // menuToggle — Ouvre / ferme le menu hamburger de la barre d'outils.
       function menuToggle(open = $("#tbMenu").hidden) {
         $("#tbMenu").hidden = !open;
@@ -5931,6 +6126,7 @@
         const qb = ev.target.closest("[data-qf]"); // filtre rapide : bouton d'une valeur
         if (qb) {
           ev.stopPropagation();
+          if (ev.shiftKey) return qfSync(Number(qb.dataset.qf), qb.dataset.qv); // Maj+clic : tous les blocs
           S.qf[Number(qb.dataset.qf)] = qb.dataset.qv;
           scheduleRender();
           return;
@@ -6014,6 +6210,20 @@
         }
         const rowEl = ev.target.closest("[data-row]");
         if (rowEl) selectRow(rowEl);
+      });
+      // clic milieu sur une valeur (ou sur la liste) d'un filtre rapide : synchroniser tous les blocs
+      $("#grid").addEventListener("mousedown", (ev) => {
+        if (ev.button === 1 && ev.target.closest(".qf, [data-qfs]")) ev.preventDefault(); // pas de défilement auto
+      });
+      $("#grid").addEventListener("auxclick", (ev) => {
+        if (ev.button !== 1 || S.layoutMode) return;
+        const qb = ev.target.closest("[data-qf]"),
+          qs = ev.target.closest("[data-qfs]");
+        if (!qb && !qs) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (qb) qfSync(Number(qb.dataset.qf), qb.dataset.qv);
+        else qfSync(Number(qs.dataset.qfs), qs.value);
       });
       $("#grid").addEventListener("change", (ev) => {
         const qs = ev.target.closest("[data-qfs]"); // filtre rapide au-delà de 4 valeurs
@@ -6969,6 +7179,7 @@
           <input type="text" data-fmt="${i}" value="${esc(f.tip || "")}" placeholder="Commentaire au survol (facultatif)" title="Texte affiché au survol du bouton. Vide : « ouvre le formulaire dans un nouvel onglet »." style="flex:1;min-width:180px">
           <input type="text" data-fmu="${i}" value="${esc(f.url || "")}" placeholder="https://…/forms/…" title="Adresse du formulaire publié (https uniquement)" style="flex:1;min-width:200px">
           ${f.url && !safeBase(f.url) ? '<span style="color:var(--rouge)">adresse https requise</span>' : ""}
+          <label title="Coché : le formulaire s'ouvre dans un nouvel onglet. Décoché : dans une fenêtre au-dessus de la page, qui se ferme après l'envoi."><input type="checkbox" data-fmtab="${i}" ${f.tab ? "checked" : ""}> nouvel onglet</label>
           <button class="icon-btn" data-fmrm="${i}" title="Retirer ce lien">✕</button></div>`,
           )
           .join("")}
@@ -7194,6 +7405,7 @@
         if (t.id === "cShowAfter") draftShowAfter = t.checked;
         if (t.dataset.fml) draft.forms[Number(t.dataset.fml)].label = t.value.trim();
         if (t.dataset.fmt) draft.forms[Number(t.dataset.fmt)].tip = t.value.trim();
+        if (t.dataset.fmtab) draft.forms[Number(t.dataset.fmtab)].tab = t.checked;
         if (t.dataset.fmu) {
           draft.forms[Number(t.dataset.fmu)].url = t.value.trim();
           renderConfig(); // signale une adresse refusée
