@@ -1,5 +1,8 @@
 # Journal des modifications — UX widget grist
 
+<img src="aia.png" alt="AIA" width="40" align="left" /> **AIA — Assisté par l'intelligence artificielle.** Ce widget et sa documentation ont été réalisés avec l'assistance d'une IA, sous la direction et avec la validation de leur auteur. Icône : [Martine Peters](https://mpeters.uqo.ca/utilisation-transparente-de-lintelligence-artificielle/), CC BY-NC-SA 4.0.
+<br clear="left" />
+
 Toutes les évolutions notables du widget sont consignées ici, de la plus récente à la plus ancienne.
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
@@ -9,6 +12,25 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 - La version 1.0 sera la première version stable.
 
 Les versions antérieures à 0.5.0 ont été développées avant la mise en dépôt du code. Leur numérotation est reconstituée a posteriori, et leurs dates ne sont pas connues précisément (septembre – début octobre 2026).
+
+---
+
+## [0.8.3] — Mention AIA — 2026-10-11
+
+### Ajouté
+- **Icône AIA** (« assisté par l'intelligence artificielle », Martine Peters, CC BY-NC-SA 4.0), avec la mention de l'auteure de l'icône et de sa licence :
+  - en pied de page du widget ;
+  - dans l'en-tête de la fenêtre d'aide ;
+  - en tête du README, du guide et de ce journal.
+- Nouveau fichier `aia.png`, à déposer à côté du widget. S'il manque, seule la mention texte s'affiche.
+
+---
+
+## [0.8.2] — Menu de la barre d'outils — 2026-10-11
+
+### Modifié
+- **Barre d'outils regroupée dans un menu ☰** : Tout replier, Actualiser, Imprimer, Aide, Disposition et Configurer sont dans une liste déroulante, avec icônes et libellés. Le menu se ferme au choix d'une action, par un clic ailleurs ou par Échap.
+- **L'aide s'ouvre sur le guide d'utilisation.** La pastille « nouvelle version » reste visible sur le bouton ☰ et sur l'entrée Aide tant que l'onglet Nouveautés n'a pas été consulté.
 
 ---
 
