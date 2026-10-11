@@ -122,8 +122,13 @@ Les actions **Disposition** et **Configurer** du menu ☰ n'apparaissent qu'aux 
 - rien n'est appliqué avant **Enregistrer**, et **Annuler** ferme le panneau sans rien changer.
 
 **Général**
-- **Nom de la configuration** : identifie la page. Deux widgets qui portent le même nom partagent la même configuration.
-- **Reprendre une configuration enregistrée** : charge une configuration existante, par exemple pour la dupliquer sous un autre nom.
+- **Page réglée** : la page dont on règle la composition. Par défaut, c'est la page affichée (marquée « — affichée »). On peut en choisir une autre : l'affichage du widget ne change pas.
+- **＋ Nouvelle page** : crée une page vide, sans toucher à la page affichée. **Dupliquer** crée une nouvelle page à partir de celle en cours de réglage (mêmes blocs, mêmes réglages).
+- Quand la page réglée n'est pas la page affichée, un encadré jaune le signale. L'enregistrement range alors la page dans `W_Composition` sans changer l'affichage. Deux options :
+  - **L'afficher dans ce widget après l'enregistrement** : le widget affichera désormais cette page ;
+  - **L'ajouter au menu de navigation** (mode « Changer de page dans le widget ») : un lien vers la page est ajouté au menu commun.
+- **Nom de la page** : identifie la page dans `W_Composition`. Si le nom existe déjà, le widget demande confirmation avant de remplacer l'autre page. Un nom ne peut pas commencer par « _ » (réservé).
+- **Liens vers des formulaires Grist** (facultatif) : « + Ajouter un lien vers un formulaire », puis un libellé (ex. « Signaler un problème »), un commentaire au survol facultatif (affiché dans une infobulle sur le bouton) et l'adresse du formulaire. Pour obtenir l'adresse : dans Grist, ouvrir la vue Formulaire, cliquer sur « Publier », puis « Partager » et copier le lien. Chaque lien devient un bouton dans l'en-tête de la page, à gauche du menu ☰, qui ouvre le formulaire dans un nouvel onglet. Seules les adresses en https sont acceptées.
 - **Titre affiché** : laissé vide, il libère de la place en haut de page.
 
 ### Choisir et régler les vues
@@ -139,7 +144,7 @@ Les actions **Disposition** et **Configurer** du menu ☰ n'apparaissent qu'aux 
 | Taille | Hauteur maximale ; au-delà, le contenu défile dans le bloc |
 | À l'ouverture | Bloc replié ou déplié à l'arrivée sur la page |
 | À la ligne | Le bloc commence une nouvelle rangée |
-| Figer à l'écran | Le bloc reste visible pendant le défilement d'un bloc voisin. Plusieurs blocs figés d'une même colonne s'empilent ; un bloc qui n'a plus la place de s'afficher sous les autres défile normalement, sous eux |
+| Figer à l'écran | Le bloc reste visible pendant le défilement d'un bloc voisin. Plusieurs blocs figés d'une même colonne s'empilent. Un bloc déplié trop haut défile à l'intérieur de son cadre ; un bloc dont même l'en-tête ne tient plus défile normalement, sous les autres |
 | Édition des champs | Autorise la modification des valeurs (droits Grist respectés) |
 | Afficher les champs vides | Pour les fiches de ce bloc |
 | Largeur des colonnes | Ajustées (sans ascenseur horizontal), celles de Grist, ou automatiques |
