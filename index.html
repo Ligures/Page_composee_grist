@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  GriSco – « Page composée » : widget personnalisé Grist                      ║
+  ║  UX widget grist — widget personnalisé Grist (version 1.0.0)                 ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -9,6 +9,7 @@
   des vues Grist (tables de métadonnées _grist_*) et en reproduit le rendu.
 
   Fichier unique : HTML + CSS + JavaScript, sans étape de construction.
+  Historique des versions : CHANGELOG.md · Guide d'utilisation : GUIDE-UTILISATEUR.md
   Hébergement : GitHub Pages, à côté de qpv-bretagne.geojson (couche QPV).
   Accès requis dans Grist : « Accès complet au document ».
 
@@ -23,7 +24,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GriSco – Page composée</title>
+    <title>UX widget grist</title>
     <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"
@@ -1810,6 +1811,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
+      const VERSION = "1.0.0"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -4297,7 +4299,7 @@
         if (pts.some((p) => !p.code)) {
           if (comC)
             console.info(
-              `[GriSco] carte : ${pts.filter((p) => !p.code).length} point(s) sans code INSEE lisible dans « ${comC.label || comC.colId} » (${comC.type}) — commune déduite de la position`,
+              `[UX widget] carte : ${pts.filter((p) => !p.code).length} point(s) sans code INSEE lisible dans « ${comC.label || comC.colId} » (${comC.type}) — commune déduite de la position`,
             );
           await locateCommunes(pts);
           if (!map._container?.isConnected) return;
@@ -4728,7 +4730,8 @@
         return String(parseJSON(cv?.widgetOptions, {})?.sessionid || "");
       }
       // syncKey — Clé de stockage de session pour un identifiant de synchronisation.
-      const syncKey = (id) => `grisco_sync_${id}`;
+      const SYNC_PREFIX = "uxwg_sync_"; // clé de stockage de session des sélections partagées
+      const syncKey = (id) => `${SYNC_PREFIX}${id}`;
       // readSync — Lit la sélection partagée.
       function readSync(id) {
         try {
@@ -4747,8 +4750,8 @@
       }
       window.addEventListener("storage", (ev) => {
         // autre widget composé ouvert dans le même onglet
-        if (!ev.key?.startsWith("grisco_sync_") || !S.meta) return;
-        const id = ev.key.slice(12);
+        if (!ev.key?.startsWith(SYNC_PREFIX) || !S.meta) return;
+        const id = ev.key.slice(SYNC_PREFIX.length);
         let hit = false;
         for (const b of S.cfg.blocks)
           if (isSelector(b) && selectorSyncId(b) === id) {
@@ -5138,7 +5141,7 @@
               const ms = Math.round(performance.now() - tb);
               if (ms > 300)
                 console.info(
-                  `[GriSco] « ${info.title} » (${KIND[info.kind] || info.kind}) : ${rows.length} lignes, ${ms} ms`,
+                  `[UX widget] « ${info.title} » (${KIND[info.kind] || info.kind}) : ${rows.length} lignes, ${ms} ms`,
                 );
             } catch (e) {
               const el = blockShell(b, info, "erreur");
@@ -5150,7 +5153,7 @@
           clearInterval(watch);
           if (current) status("");
           console.info(
-            `[GriSco] page « ${S.cfg.name} » ${interrupted ? "interrompue (un rendu plus récent a pris le relais)" : "calculée"} en ${Math.round(performance.now() - t0)} ms` +
+            `[UX widget] page « ${S.cfg.name} » ${interrupted ? "interrompue (un rendu plus récent a pris le relais)" : "calculée"} en ${Math.round(performance.now() - t0)} ms` +
               ` — blocs : ${blocks.length} configurés, ${blocks.filter(isSelector).length} liste(s) de sélection, ${shown} affichés` +
               (skipped.empty.length ? `, ${skipped.empty.length} vides masqués [${skipped.empty.join(" ; ")}]` : "") +
               (skipped.unsupported.length
@@ -6371,7 +6374,7 @@
       ${L("Hauteur des graphiques (px)", `<input type="number" id="cChartH" min="100" step="20" value="${draft.chartHeight || 260}" style="width:80px">`, "Hauteur par défaut des graphiques d'une ligne.")}
       ${L("Hauteur maximale des tableaux (px)", `<input type="number" id="cMaxH" min="120" step="20" value="${draft.tableMaxHeight}" style="width:80px">`, "Au-delà, le tableau défile à l'intérieur de son bloc (en-têtes fixes).")}
     </section>
-    <section class="cs adv"><h4>5. Navigation entre pages <small>— menu commun à toutes les pages composées</small></h4>
+    <section class="cs adv"><h4>5. Navigation entre pages <small>— menu commun à toutes les configurations</small></h4>
       ${L("Adresse du document", `<input type="text" id="cMnUrl" value="${esc(draftNav.url)}" placeholder="https://…/o/organisation/document" style="width:100%">`, "Adresse de base du document Grist (https uniquement), utilisée pour construire les liens vers les pages.")}
       ${C('id="cMnInWidget"', draftNav.inWidget, "Changer de page dans le widget", "Instantané, sans recharger Grist : le widget affiche la configuration de la page choisie. Clic du milieu : ouvre la vraie page Grist.")}
       ${C('id="cMnSingle"', draftNav.singlePage, "Ouvrir les pages en mode page unique", "Ajoute ?style=singlePage aux liens : la page s'ouvre sans les menus de Grist.")}
@@ -6402,7 +6405,7 @@
         .join("")}</div>
       <button class="icon-btn" id="cMnAdd" style="margin-top:6px" title="Les pages dont l'utilisateur ne peut lire aucune table sont masquées automatiquement">+ Ajouter une page au menu</button>
     </section>
-    <p class="pdiag">${esc(m.diag || "")}</p>
+    <p class="pdiag">UX widget grist ${VERSION} · ${esc(m.diag || "")}</p>
     </div>`;
         if (keep) $(".pbody").scrollTop = keep;
       }
