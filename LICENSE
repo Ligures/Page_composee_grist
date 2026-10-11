@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Arnault
+Copyright (c) 2026 Ligures
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Cette licence MIT couvre uniquement le code du widget (index.html) et sa
+documentation. Elle ne couvre pas :
+- la police Marianne et l'identité visuelle de l'État (bleu France), soumises
+  aux conditions d'utilisation du Système de design de l'État (DSFR) et
+  réservées aux services de l'État (voir l'apparence « neutre » du widget) ;
+- l'icône AIA (aia.png) : © 2023 Martine Peters, CC BY-NC-SA 4.0 ;
+- les données QPV (qpv-bretagne.geojson) : © ANCT, Licence Ouverte 2.0.
