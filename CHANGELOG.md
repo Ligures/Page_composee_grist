@@ -15,6 +15,19 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.9] — Apparence au choix, menu des pages sur smartphone, licence MIT — 2026-10-11
+
+### Ajouté
+- **Choix de l'apparence** à la première ouverture par un administrateur : **style État (DSFR)** (police Marianne, bleu France), réservé aux services de l'État, ou **style neutre** (police du système, bleu neutre) pour toute autre structure. Les restrictions d'usage du DSFR sont rappelées. Le choix est commun au document et se modifie dans la configuration (section Affichage).
+- **Smartphone** : le menu des pages est regroupé derrière un bouton, à gauche, qui porte le nom de la page affichée (icône de pages), distinct du menu ☰ des actions, à droite.
+- **Licence MIT** (fichier `LICENSE`) : elle couvre le code et la documentation, mais ni la police Marianne ni l'identité visuelle de l'État, ni l'icône AIA, ni les données QPV.
+
+### Modifié
+- La police Marianne (normale) est chargée depuis le paquet `@gouvfr/dsfr` 1.14.4, en version figée, comme la police grasse (elle venait de la branche `master` du dépôt beta.gouv.fr).
+- README : sections « Apparence et DSFR » et « Licence » ; le widget est présenté comme inspiré du DSFR, sans en être une implémentation officielle.
+
+---
+
 ## [0.8.8] — Nouvelles pages, liens vers des formulaires, filtres rapides synchronisés — 2026-10-11
 
 ### Ajouté
