@@ -69,11 +69,13 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 
 **Filtre rapide**
 - **Ce qu'il fait** : il ne s'applique qu'à son bloc et ne change rien aux autres blocs ni aux sélections.
+- **Synchroniser** : un **clic milieu** (molette) ou **Maj+clic** sur une valeur l'applique à tous les blocs de la page filtrés sur le même champ (par exemple *Réseau*). Sur « Tous », tous ces blocs sont remis à « Tous ». Au-delà de 4 valeurs (liste déroulante), choisir la valeur puis faire un clic milieu sur la liste. L'infobulle de chaque valeur le rappelle. La comparaison porte sur le texte affiché, sans tenir compte des majuscules ni des accents. Si la valeur n'existe pas telle quelle dans un bloc, le rapprochement se fait par le début du texte : « Privé » garde « Privé sous contrat » et « Privé hors contrat » ; à l'inverse, « Privé sous contrat » garde « Privé ».
 - **Selon la largeur du bloc** :
   - boutons côte à côte ;
   - un seul bouton portant la valeur active (`Public ▾`), qui ouvre la liste des choix ;
   - une icône d'entonnoir, pleine et bleue quand un filtre est actif.
 - **Rechargement** : la page revient à la valeur prévue par l'administrateur.
+- **Une seule valeur** : si toutes les lignes du bloc ont la même valeur (par exemple uniquement « Public »), le filtre n'est pas affiché, puisqu'il ne changerait rien.
 
 **Page vide** : le message « Aucune donnée, pas d'élément sélectionné » signifie qu'il faut d'abord faire un choix dans les listes de sélection.
 
@@ -128,7 +130,7 @@ Les actions **Disposition** et **Configurer** du menu ☰ n'apparaissent qu'aux 
   - **L'afficher dans ce widget après l'enregistrement** : le widget affichera désormais cette page ;
   - **L'ajouter au menu de navigation** (mode « Changer de page dans le widget ») : un lien vers la page est ajouté au menu commun.
 - **Nom de la page** : identifie la page dans `W_Composition`. Si le nom existe déjà, le widget demande confirmation avant de remplacer l'autre page. Un nom ne peut pas commencer par « _ » (réservé).
-- **Liens vers des formulaires Grist** (facultatif) : « + Ajouter un lien vers un formulaire », puis un libellé (ex. « Signaler un problème »), un commentaire au survol facultatif (affiché dans une infobulle sur le bouton) et l'adresse du formulaire. Pour obtenir l'adresse : dans Grist, ouvrir la vue Formulaire, cliquer sur « Publier », puis « Partager » et copier le lien. Chaque lien devient un bouton dans l'en-tête de la page, à gauche du menu ☰, qui ouvre le formulaire dans un nouvel onglet. Seules les adresses en https sont acceptées.
+- **Liens vers des formulaires Grist** (facultatif) : « + Ajouter un lien vers un formulaire », puis un libellé (ex. « Signaler un problème »), un commentaire au survol facultatif (affiché dans une infobulle sur le bouton) et l'adresse du formulaire. Pour obtenir l'adresse : dans Grist, ouvrir la vue Formulaire, cliquer sur « Publier », puis « Partager » et copier le lien. Chaque lien devient un bouton dans l'en-tête de la page, à gauche du menu ☰. Le formulaire s'ouvre dans une fenêtre au-dessus de la page, ou dans un nouvel onglet si la case « nouvel onglet » est cochée. La fenêtre se ferme avec ✕, Échap ou un clic à côté, et toute seule après l'envoi du formulaire ; la page est alors rechargée pour montrer la nouvelle réponse. La fermeture automatique fonctionne si l'utilisateur peut lire la table du formulaire ; sinon, réglez dans Grist une redirection après l'envoi (n'importe quelle adresse). Le bouton ↗ de la fenêtre ouvre le formulaire dans un nouvel onglet. Seules les adresses en https sont acceptées.
 - **Titre affiché** : laissé vide, il libère de la place en haut de page.
 
 ### Choisir et régler les vues
