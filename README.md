@@ -7,7 +7,7 @@ Widget personnalisé [Grist](https://www.getgrist.com/) qui rassemble sur **une 
 
 Le widget ne duplique rien. Il **relit la configuration des vues Grist** (tables de métadonnées `_grist_*`) et en reproduit le rendu. Cela comprend les colonnes affichées, le tri, les filtres, les liaisons entre vues, la mise en forme conditionnelle et la disposition des fiches. Quand une vue change dans Grist, la page suit.
 
-**Version actuelle : 0.8.5** (en développement) · Développeur : **Ligures** — voir le [journal des modifications](CHANGELOG.md).
+**Version actuelle : 0.8.10** (en développement) · Développeur : **Ligures** — voir le [journal des modifications](CHANGELOG.md).
 Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), aussi accessible dans le widget par le bouton **Aide**.
 
 ---
@@ -70,7 +70,6 @@ Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), 
 - Menu commun à toutes les configurations. Les pages que l'utilisateur ne peut pas lire sont masquées, et un lien peut être conditionné à l'accès à une table.
 - Changement de configuration instantané dans le widget : une seule page Grist peut accueillir toutes les configurations.
 - Impression / PDF.
-- Export CSV par bloc : séparateur `;`, ouverture directe dans Excel.
 
 **Aide intégrée**
 - **Aide** (dans le menu ☰) : guide, nouveautés et README (ce dernier réservé aux administrateurs), lus directement dans les fichiers du dépôt.
@@ -88,6 +87,7 @@ Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), 
 | `README.md` | Ce document : installation et fonctionnement technique (onglet « À propos » de l'aide) |
 | `GUIDE-UTILISATEUR.md` | Guide pour les utilisateurs et les administrateurs (onglet « Guide ») |
 | `CHANGELOG.md` | Journal des modifications (onglet « Nouveautés ») |
+| `LICENSE` | Licence MIT du code, et ce qu'elle ne couvre pas |
 
 Les trois fichiers Markdown sont lus par le widget : ils doivent rester à côté de `index.html`, avec ces noms.
 
@@ -106,7 +106,8 @@ Le widget est un **fichier HTML unique**, sans étape de construction.
    - *Ajouter un widget → Personnalisé*, sur n'importe quelle table ;
    - *URL personnalisée* : coller l'adresse ci-dessus ;
    - *Niveau d'accès* : **Accès complet au document**. Le widget doit lire les métadonnées des vues.
-3. **Mettre à jour** : remplacer le fichier dans le dépôt, attendre la republication (1 à 2 minutes), puis recharger Grist avec **Ctrl+F5**. La version installée s'affiche en bas du panneau de configuration.
+3. **Choisir l'apparence** : à la première ouverture, un administrateur choisit le **style État (DSFR)**, réservé aux services de l'État, ou le **style neutre**, pour toute autre structure (voir [Apparence et DSFR](#apparence-et-dsfr)). Le choix se modifie ensuite dans la configuration, section Affichage.
+4. **Mettre à jour** : remplacer le fichier dans le dépôt, attendre la republication (1 à 2 minutes), puis recharger Grist avec **Ctrl+F5**. La version installée s'affiche en bas du panneau de configuration.
 
 **Organisation recommandée**
 - Garder les vues natives sur des pages « support », éventuellement masquées aux utilisateurs.
@@ -181,7 +182,6 @@ Un bloc carte reprend le widget carte de Grist : colonnes Nom / Latitude / Longi
 - **HTML des étiquettes de carte** : nettoyé par DOMPurify. La mise en forme est conservée ; scripts et gestionnaires d'événements sont retirés.
 - **Bibliothèques externes** : versions figées, vérifiées par empreinte d'intégrité (SRI). Un fichier altéré sur le CDN est refusé.
 - **Liens du menu** : seules les adresses `https://` sont acceptées.
-- **Export CSV** : les textes commençant par `=`, `+`, `-` ou `@` sont neutralisés, pour éviter qu'Excel ne les interprète comme des formules.
 - **Données envoyées à des services tiers** :
   - avec un zonage, les **codes INSEE** et, si le code manque, les **coordonnées d'un point** sont transmis à geo.api.gouv.fr ;
   - avec les IRIS, des codes INSEE sont transmis au service de l'IGN ;
@@ -205,7 +205,16 @@ Toutes sont chargées depuis un CDN, en version figée, avec empreinte d'intégr
 | polygon-clipping | 0.15.7 | Fusion des communes en EPCI | Avec le zonage EPCI |
 | marked | 12.0.2 | Mise en forme de l'aide (Markdown) | À la première ouverture de l'aide |
 
-Police : Marianne.
+Police : Marianne (style État), chargée depuis le paquet `@gouvfr/dsfr` 1.14.4 ; police du système en style neutre.
+
+### Apparence et DSFR
+
+Le widget est **inspiré** du Système de design de l'État (DSFR), sans en être une implémentation officielle : il ne charge ni le CSS ni le JavaScript du DSFR.
+
+- **Style État (DSFR)** : police Marianne, bleu France (`#000091`). Le DSFR et la police Marianne sont réservés aux services de l'État par leurs [conditions d'utilisation](https://www.systeme-de-design.gouv.fr/composants-et-modeles).
+- **Style neutre** : police du système, bleu neutre (`#1f4e8c`). À utiliser par toute autre structure (collectivité, association, entreprise…).
+
+Le choix est commun au document ; il est enregistré dans la ligne `_Navigation` de `W_Composition` (`nav.theme`). Sans choix enregistré, le widget s'affiche en style État et le propose à l'administrateur.
 
 ---
 
@@ -255,7 +264,8 @@ Le fichier est commenté. Un **sommaire** en tête du script décrit les parties
 
 ## Licence et sources des données
 
-- **Code** : © Ligures, licence à préciser (par exemple MIT ou Licence Ouverte / Etalab 2.0).
+- **Code** : © 2026 Ligures, [licence MIT](LICENSE). Elle couvre uniquement le code et la documentation.
+- **Police Marianne et identité visuelle de l'État** : non couvertes par la licence MIT ; soumises aux conditions d'utilisation du DSFR (voir [Apparence et DSFR](#apparence-et-dsfr)).
 - **QPV 2024** : © ANCT, [Licence Ouverte 2.0](https://www.etalab.gouv.fr/licence-ouverte-open-licence/).
 - **Contours des communes et EPCI** : [API Découpage administratif](https://geo.api.gouv.fr), IGN / INSEE.
 - **Contours IRIS** : © IGN – INSEE, via la Géoplateforme.

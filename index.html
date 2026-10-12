@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.9)                 ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.10)                ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -2188,6 +2188,10 @@
             <path d="M20 4v5h-5" /></svg
           ><span class="lbl">Actualiser</span>
         </button>
+        <button class="tb" id="btnSingle" aria-label="Plein écran" data-tip="Plein écran : ouvrir cette page dans un nouvel onglet, sans les menus de Grist">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg
+          ><span class="lbl">Plein écran</span>
+        </button>
         <button class="tb" id="btnPrint" aria-label="Imprimer" data-tip="Imprimer la page ou l'enregistrer en PDF">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M6 9V3h12v6" />
@@ -2335,7 +2339,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.9"; // voir CHANGELOG.md
+      const VERSION = "0.8.10"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -6505,6 +6509,14 @@
         window.print();
       }
       $("#btnPrint").addEventListener("click", () => printPage());
+      // Plein écran : la page Grist qui contient ce widget, en mode page unique (sans les menus de Grist), nouvel onglet
+      $("#btnSingle").addEventListener("click", async () => {
+        menuToggle(false);
+        const base = safeBase(S.nav?.url) || safeBase(await guessDocUrl());
+        const vid = hostView(S.cfg.name);
+        if (!base || !vid) return status("Plein écran : page Grist du widget introuvable (adresse du document à renseigner dans la configuration).", true);
+        window.open(pageUrl(base, vid, true), "_blank", "noopener");
+      });
 
       /* ---------- Aide intégrée ----------
          Les fichiers Markdown du dépôt (à côté du widget sur GitHub Pages) sont lus à l'ouverture et affichés
@@ -7329,7 +7341,11 @@
     <section class="cs adv"><h4>5. Navigation entre pages <small>— menu commun à toutes les configurations</small></h4>
       ${L("Adresse du document", `<input type="text" id="cMnUrl" value="${esc(draftNav.url)}" placeholder="https://…/o/organisation/document" style="width:100%">`, "Adresse de base du document Grist (https uniquement), utilisée pour construire les liens vers les pages.")}
       ${C('id="cMnInWidget"', draftNav.inWidget, "Changer de page dans le widget", "Instantané, sans recharger Grist : le widget affiche la configuration de la page choisie. Clic du milieu : ouvre la vraie page Grist.")}
-      ${C('id="cMnSingle"', draftNav.singlePage, "Ouvrir les pages en mode page unique", "Ajoute ?style=singlePage aux liens : la page s'ouvre sans les menus de Grist.")}
+      ${
+        draftNav.inWidget
+          ? "" // pages changées dans le widget : le mode page unique ne sert pas (voir « Plein écran » du menu ☰)
+          : C('id="cMnSingle"', draftNav.singlePage, "Ouvrir les pages en mode page unique", "Ajoute ?style=singlePage aux liens : la page s'ouvre sans les menus de Grist.")
+      }
       <div>${draftNav.items
         .map(
           (x, i) => `<div class="mn">
@@ -7867,7 +7883,7 @@
           })
           .map((x) => {
             const page = !!x.viewId && !!S.meta?.pageOfView.has(x.viewId);
-            const url = page && safeBase(n.url) ? pageUrl(safeBase(n.url), x.viewId, n.singlePage) : ""; // lien Grist (clic du milieu)
+            const url = page && safeBase(n.url) ? pageUrl(safeBase(n.url), x.viewId, n.singlePage && !n.inWidget) : ""; // lien Grist (clic du milieu)
             return `<a href="${url ? esc(url) : "#"}" title="${esc(url)}" target="_top"${n.inWidget && x.cfg ? ` data-gocfg="${esc(x.cfg)}"` : ""} class="${x.cfg && x.cfg === S.cfg.name ? "cur" : ""}">${esc(x.label || (page ? S.meta.pageOfView.get(x.viewId) : x.cfg) || "Page")}</a>`;
           });
         if (!links.length) {

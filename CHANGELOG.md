@@ -15,6 +15,16 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.10] — Plein écran — 2026-10-12
+
+### Ajouté
+- **☰ → Plein écran** : ouvre la page Grist qui contient le widget dans un nouvel onglet, en mode page unique (sans les menus de Grist).
+
+### Modifié
+- L'option « Ouvrir les pages en mode page unique » n'est plus proposée avec « Changer de page dans le widget », où elle ne sert pas ; elle n'est plus appliquée aux liens dans ce mode.
+
+---
+
 ## [0.8.9] — Apparence au choix, menu des pages sur smartphone, licence MIT, sans export CSV — 2026-10-11
 
 ### Ajouté

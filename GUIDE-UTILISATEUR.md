@@ -46,6 +46,7 @@ En haut de la page, de gauche à droite et de haut en bas :
   |---|---|
   | Tout replier / Tout déplier | Replie ou déplie tous les blocs d'un coup |
   | Actualiser | Recharge les données et la configuration des vues |
+  | Plein écran | Ouvre cette page dans un nouvel onglet, sans les menus de Grist (mode page unique) |
   | Imprimer | Imprime la page ou l'enregistre en PDF |
   | Aide | Ouvre ce guide ; l'onglet Nouveautés présente les évolutions du widget |
   | Disposition, Configurer | Réservés aux administrateurs (partie 2) |
@@ -210,7 +211,7 @@ Section **5. Navigation entre pages**. Ce réglage est commun à toutes les conf
 
 - **Adresse du document** : adresse de base du document Grist (https).
 - **Changer de page dans le widget** : le menu bascule de configuration sans recharger Grist. Recommandé quand toutes les configurations sont réunies dans une seule page Grist.
-- **Ouvrir les pages en mode page unique** : les liens ouvrent Grist sans ses menus.
+- **Ouvrir les pages en mode page unique** : les liens ouvrent Grist sans ses menus. Proposé seulement sans « Changer de page dans le widget » ; sinon, utiliser **☰ → Plein écran**.
 - **Pour chaque lien** :
   - libellé ;
   - page Grist, ou **— ce widget —** ;
