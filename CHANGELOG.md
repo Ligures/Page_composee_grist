@@ -27,6 +27,7 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
   - un choix fait sur une page s'applique désormais aussi aux pages du widget déjà visitées (elles gardaient leur ancienne sélection) ;
   - la sélection partagée est propre au document et à la table de la liste : elle ne s'impose plus depuis un autre document ouvert dans le même onglet, ni à une liste d'une autre table portant le même identifiant ;
   - une sélection partagée absente de la liste (droits, filtres) est ignorée.
+- **Menu des pages, liens « — ce widget — »** : ils pointaient vers « # » (adresse du widget au survol), si bien que le clic du milieu et le mode page unique ne fonctionnaient pas. Ils pointent désormais vers la page Grist qui contient le widget (de préférence celle dont le widget affiche la configuration du lien), avec `?style=singlePage` si l'option est cochée.
 
 ### Modifié
 - **Impression** : les boutons de filtre rapide ne sont plus imprimés ; un filtre actif est rappelé en texte dans l'en-tête du bloc (par exemple « Réseau : Privé »).

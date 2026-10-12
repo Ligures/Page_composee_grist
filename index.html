@@ -7856,11 +7856,14 @@
           ).then(() => renderNav());
         }
         const links = n.items
+          .map((x) =>
+            x.viewId && S.meta?.pageOfView.has(x.viewId) ? x : { ...x, viewId: hostView(x.cfg) || x.viewId, host: true },
+          )
           .filter((x) => {
             const page = !!x.viewId && !!S.meta?.pageOfView.has(x.viewId); // la page Grist existe encore
             if (!page && !(n.inWidget && x.cfg)) return false; // ni page, ni configuration à afficher dans le widget
             if (x.needTable && !S.navAccess[x.needTable]) return false;
-            return page ? viewReadable(x.viewId) : cfgReadable(x.cfg);
+            return page && !x.host ? viewReadable(x.viewId) : cfgReadable(x.cfg); // « ce widget » : droits de sa config
           })
           .map((x) => {
             const page = !!x.viewId && !!S.meta?.pageOfView.has(x.viewId);
@@ -7875,6 +7878,28 @@
         // courante) — distinct du menu ☰ des actions, à droite
         const cur = /class="cur">([^<]*)<\/a>$/.exec(links.find((l) => l.includes('class="cur"')) || "")?.[1];
         nav.innerHTML = `<button type="button" class="pnav-tog" aria-expanded="false" aria-controls="pnavList" title="Changer de page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h9l3 3v12H8zM4 7v14h12" /></svg><span>${cur || "Pages"}</span><span class="qf-caret">▾</span></button><span class="pnav-list" id="pnavList">${links.join("")}</span>`;
+      }
+      // hostView — Page Grist qui contient ce widget, pour un lien « — ce widget — » : de préférence celle dont le
+      //   widget affiche la configuration du lien, sinon la première page où le widget est installé. Elle sert au lien
+      //   réel (clic du milieu, nouvel onglet, mode page unique) ; le clic normal change de page dans le widget.
+      function hostView(cfgName) {
+        const m = S.meta;
+        if (!m) return 0;
+        const here = (location.host + location.pathname).replace(/\/index\.html$/, "/").replace(/\/+$/, "");
+        let first = 0;
+        for (const sec of m.sections.values()) {
+          const cv = parseJSON(parseJSON(sec.options).customView, null);
+          const url = String(cv?.url || "")
+            .replace(/^https?:\/\//, "")
+            .replace(/[?#].*$/, "")
+            .replace(/\/index\.html$/, "/")
+            .replace(/\/+$/, "");
+          if (!url || url !== here || !m.pageOfView.has(sec.parentId)) continue;
+          const name = parseJSON(cv.widgetOptions, {})?.config?.name;
+          if (cfgName && name === cfgName) return sec.parentId;
+          first ||= sec.parentId;
+        }
+        return first;
       }
       // pnavToggle — Ouvre / ferme la liste des pages (smartphone).
       function pnavToggle(open = !$("#pnav").classList.contains("open")) {
