@@ -15,14 +15,22 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
-## [0.8.9] — Apparence au choix, menu des pages sur smartphone, licence MIT — 2026-10-11
+## [0.8.9] — Apparence au choix, menu des pages sur smartphone, licence MIT, sans export CSV — 2026-10-11
 
 ### Ajouté
 - **Choix de l'apparence** à la première ouverture par un administrateur : **style État (DSFR)** (police Marianne, bleu France), réservé aux services de l'État, ou **style neutre** (police du système, bleu neutre) pour toute autre structure. Les restrictions d'usage du DSFR sont rappelées. Le choix est commun au document et se modifie dans la configuration (section Affichage).
 - **Smartphone** : le menu des pages est regroupé derrière un bouton, à gauche, qui porte le nom de la page affichée (icône de pages), distinct du menu ☰ des actions, à droite.
 - **Licence MIT** (fichier `LICENSE`) : elle couvre le code et la documentation, mais ni la police Marianne ni l'identité visuelle de l'État, ni l'icône AIA, ni les données QPV.
 
+### Corrigé
+- **ID de synchronisation des listes de sélection** :
+  - un choix fait sur une page s'applique désormais aussi aux pages du widget déjà visitées (elles gardaient leur ancienne sélection) ;
+  - la sélection partagée est propre au document et à la table de la liste : elle ne s'impose plus depuis un autre document ouvert dans le même onglet, ni à une liste d'une autre table portant le même identifiant ;
+  - une sélection partagée absente de la liste (droits, filtres) est ignorée.
+
 ### Modifié
+- **Impression** : les boutons de filtre rapide ne sont plus imprimés ; un filtre actif est rappelé en texte dans l'en-tête du bloc (par exemple « Réseau : Privé »).
+- **Export CSV supprimé** (bouton ⤓ des blocs) : l'export se fait depuis les vues natives de Grist.
 - La police Marianne (normale) est chargée depuis le paquet `@gouvfr/dsfr` 1.14.4, en version figée, comme la police grasse (elle venait de la branche `master` du dépôt beta.gouv.fr).
 - README : sections « Apparence et DSFR » et « Licence » ; le widget est présenté comme inspiré du DSFR, sans en être une implémentation officielle.
 

@@ -64,7 +64,6 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 | ▾ / ▸ devant le titre | Replier ou déplier le bloc (un clic sur le titre fonctionne aussi) |
 | **Filtre rapide** (`Tous \| Public \| Privé`) | Ne montrer que les lignes d'une valeur (voir ci-dessous) |
 | Champ « Filtrer… » | Recherche dans les lignes du bloc (grands tableaux et listes de fiches) |
-| ⤓ | Exporter le bloc en CSV |
 | ⛶ | Afficher le bloc en plein écran ; ✕ ou Échap pour revenir |
 
 **Filtre rapide**
@@ -102,8 +101,8 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 
 ### Imprimer et exporter
 
-- **Imprimer** : tous les blocs sont dépliés le temps de l'impression. Le titre de la page et les sélections en cours figurent en tête. Pour un PDF, choisir « Enregistrer au format PDF » dans la fenêtre d'impression.
-- **⤓ (CSV)** : exporte les lignes visibles du bloc (filtres, recherche et filtre rapide compris). Le fichier s'ouvre directement dans Excel ou LibreOffice.
+- **Imprimer** : tous les blocs sont dépliés le temps de l'impression. Le titre de la page et les sélections en cours figurent en tête. Pour un PDF, choisir « Enregistrer au format PDF » dans la fenêtre d'impression. Les boutons de filtre rapide ne sont pas imprimés ; un filtre actif est rappelé en texte à côté du titre du bloc (par exemple « Réseau : Privé »).
+- **Exporter des données** : utiliser l'export de Grist (menu de la vue native, *Télécharger en CSV / XLSX*).
 
 ### Sur smartphone
 
@@ -179,7 +178,10 @@ Pour une vue affichée en **Liste de sélection** :
 - **Colonne affichée** : le texte proposé dans la liste.
 - **Ordre** : alphabétique, ou celui de la vue Grist.
 - **Regrouper par** : intertitres dans la liste (par exemple les écoles par commune).
-- **ID de synchronisation** : les listes qui portent le même identifiant gardent la même sélection d'une page à l'autre.
+- **ID de synchronisation** : les listes qui portent le même identifiant gardent la même sélection d'une page à l'autre (pages du widget comme autres pages Grist du même onglet).
+  - Seules les listes **sur la même table** se synchronisent : deux listes de tables différentes (par exemple Circonscriptions et Écoles) peuvent porter le même identifiant sans interférer.
+  - La sélection partagée est propre au **document** : elle ne passe pas d'un document à un autre (par exemple d'une copie de développement au document en service).
+  - Elle dure le temps de l'onglet du navigateur ; un nouvel onglet repart de la première valeur.
 
 ### Cartes : réglages
 

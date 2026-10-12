@@ -667,6 +667,12 @@
         white-space: nowrap;
       }
       /* filtre rapide dans l'en-tête des blocs : 3 présentations (full / compact / icon), voir fitQf() */
+      .bh .qf-print {
+        display: none;
+        font-size: 11px;
+        color: var(--muet);
+        white-space: nowrap;
+      }
       .bh .qf {
         display: inline-flex;
         flex: none;
@@ -2097,8 +2103,14 @@
         .bh .tog,
         .bh .max,
         .bh .search,
+        .bh .qf,
+        .bh .qfs,
         .lyr {
           display: none !important;
+        }
+        /* filtre rapide actif : rappelé en texte à la place des boutons */
+        .bh .qf-print {
+          display: inline !important;
         }
         .grid {
           gap: 8px;
@@ -2283,7 +2295,7 @@
    Listes de sélection ....... renderSelectors, synchronisation entre pages
    Rendu principal ........... render() — point central, appelé via scheduleRender()
    Interactions .............. clics, sélection de ligne, plein écran, Disposition
-   Export .................... impression / PDF, CSV
+   Export .................... impression / PDF
    Configuration ............. panneau ⚙ (renderConfig), enregistrement
    Démarrage ................. init(), applyOptions(), abonnements grist.on…
 
@@ -3028,7 +3040,7 @@
       /* ---------- Filtre rapide (un par bloc) ----------
          Chaque bloc peut recevoir, dans son en-tête, un sélecteur « Tous | valeur 1 | valeur 2… » sur un champ
          choisi dans sa configuration (b.qfField, ex. « Reseau »), avec une valeur à l'ouverture (b.qfDefault).
-         Le filtre n'agit que sur l'affichage du bloc (et son export CSV), pas sur les liaisons. */
+         Le filtre n'agit que sur l'affichage du bloc, pas sur les liaisons. */
       const QF_KINDS = ["record", "detail", "chart", "custom"]; // + fiches affichées en liste
       const QF_ICON = '<svg class="qf-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>';
       // fitQf — Choisit la présentation du filtre rapide de chaque bloc selon la place disponible dans l'en-tête :
@@ -3153,15 +3165,16 @@
         const tip = `Filtrer ce bloc sur « ${name} »`;
         // aide au survol de chaque valeur : clic sur ce bloc, clic milieu (ou Maj+clic) sur tous les blocs
         const sync = `\nClic milieu (ou Maj+clic) : appliquer à tous les blocs de la page filtrés sur « ${name} »`;
+        const pr = cur ? `<span class="qf-print">${esc(name)} : ${esc(vals.find((x) => qfSame(x, cur)) || cur)}</span>` : ""; // impression
         if (vals.length > 4)
-          return `<select class="qfs" data-qfs="${b.id}" title="${esc(tip + "\nClic milieu sur la liste : appliquer la valeur choisie à tous les blocs de la page filtrés sur « " + name + " »")}"><option value="">${esc(col.label || col.colId)} : tous</option>${
+          return `${pr}<select class="qfs" data-qfs="${b.id}" title="${esc(tip + "\nClic milieu sur la liste : appliquer la valeur choisie à tous les blocs de la page filtrés sur « " + name + " »")}"><option value="">${esc(col.label || col.colId)} : tous</option>${
             exact ? "" : `<option value="${esc(cur)}" selected>${esc(cur)} (${vals.filter(isOn).length} valeurs)</option>`
           }${vals.map((v) => `<option value="${esc(v)}" ${cur && exact && qfSame(v, cur) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`;
         // trois présentations, choisies par fitQf() selon la place dans l'en-tête :
         //   « full » boutons côte à côte · « compact » seule l'option active, les autres en liste au clic
         //   · « icon » icône de filtre (pastille si un filtre est actif), liste au clic
         const label = cur ? vals.find((x) => qfSame(x, cur)) || cur : "Tous"; // valeur rapprochée : son propre texte
-        return `<span class="qf full${cur ? " active" : ""}" title="${esc(tip)}">
+        return `${pr}<span class="qf full${cur ? " active" : ""}" title="${esc(tip)}">
           <button type="button" class="qf-cur" data-qftog="${b.id}" aria-haspopup="true" aria-label="${esc(tip)} : ${esc(label)}">${QF_ICON}<span class="qf-lab">${esc(label)}</span><span class="qf-caret">▾</span></button>
           <span class="qf-opts">${[["", "Tous"], ...vals.map((v) => [v, v])]
             .map(([v, l]) => `<button type="button" data-qf="${b.id}" data-qv="${esc(v)}" class="${(v ? cur && isOn(v) : !cur) ? "on" : ""}" title="${esc(`Clic : ${v ? `n'afficher que « ${l} »` : "tout afficher"} dans ce bloc${sync}`)}">${esc(l)}</button>`)
@@ -3183,7 +3196,6 @@
         el.dataset.sec = b.id;
         el.innerHTML = `<div class="bh"><button class="tog" data-tog="${b.id}" title="Replier / déplier">${S.collapsed[b.id] ? "▸" : "▾"}</button>
     <h2>${esc(info.title)}</h2>${extraHead}<span class="badge"></span>
-    ${["record", "detail", "single"].includes(info.kind) ? `<button class="max" data-xb="${b.id}" title="Exporter ce bloc en CSV">⤓</button>` : ""}
     <button class="max" data-max="${b.id}" title="${S.maxed === b.id ? "Réduire (Échap)" : "Plein écran"}">${S.maxed === b.id ? "✕" : "⛶"}</button></div><div class="bb"></div>`;
         if (S.layoutMode) {
           el.draggable = true;
@@ -5505,33 +5517,42 @@
         const cv = parseJSON(parseJSON(sec?.options).customView, null);
         return String(parseJSON(cv?.widgetOptions, {})?.sessionid || "");
       }
-      // syncKey — Clé de stockage de session pour un identifiant de synchronisation.
-      const SYNC_PREFIX = "uxwg_sync_"; // clé de stockage de session des sélections partagées
-      const syncKey = (id) => `${SYNC_PREFIX}${id}`;
-      // readSync — Lit la sélection partagée.
-      function readSync(id) {
+      /* Clé de stockage d'une sélection partagée (0.8.9) : document + table de la liste + identifiant.
+         - le document : le stockage de session est commun à tout l'onglet, donc à tous les documents Grist ouverts
+           successivement (sans lui, la sélection d'un autre document, par exemple sa copie de développement,
+           s'imposait) ;
+         - la table : un numéro de ligne n'a de sens que dans sa table (deux listes de tables différentes portant
+           le même identifiant se « synchronisaient » sur des lignes sans rapport). */
+      const SYNC_PREFIX = "uxwg_sync_";
+      function syncKey(b) {
+        const sid = selectorSyncId(b);
+        if (!sid) return "";
+        const tid = getInfo(b.id)?.tableId || "";
+        return `${SYNC_PREFIX}${S.docKey || ""}:${tid}:${sid}`;
+      }
+      // readSync — Lit la sélection partagée (0 si aucune).
+      function readSync(key) {
         try {
-          return Number(sessionStorage.getItem(syncKey(id))) || 0;
+          return Number(sessionStorage.getItem(key)) || 0;
         } catch {
           return 0;
         }
       }
       // writeSync — Enregistre la sélection partagée.
-      function writeSync(id, rowId) {
+      function writeSync(key, rowId) {
         try {
-          sessionStorage.setItem(syncKey(id), String(rowId));
+          sessionStorage.setItem(key, String(rowId));
         } catch {
           /* stockage indisponible */
         }
       }
       window.addEventListener("storage", (ev) => {
-        // autre widget composé ouvert dans le même onglet
-        if (!ev.key?.startsWith(SYNC_PREFIX) || !S.meta) return;
-        const id = ev.key.slice(SYNC_PREFIX.length);
+        // autre widget ouvert dans le même onglet (autre page Grist) : même clé = même document, table et identifiant
+        if (!ev.key?.startsWith(SYNC_PREFIX) || !S.meta || !ev.newValue) return;
         let hit = false;
         for (const b of S.cfg.blocks)
-          if (isSelector(b) && selectorSyncId(b) === id) {
-            S.sel[b.id] = Number(ev.newValue) || 0;
+          if (isSelector(b) && syncKey(b) === ev.key && S.sel[b.id] !== Number(ev.newValue)) {
+            S.sel[b.id] = Number(ev.newValue);
             hit = true;
           }
         if (hit) scheduleRender();
@@ -5543,13 +5564,15 @@
         const parts = [];
         for (const b of sels) {
           const info = getInfo(b.id);
-          const sid = selectorSyncId(b);
-          if (sid && S.sel[b.id] === undefined) {
-            const v = readSync(sid);
-            if (v) S.sel[b.id] = v;
-          }
+          const key = syncKey(b);
           try {
             const { rows } = await rowsFor(b.id, ctx);
+            // sélection partagée : elle fait foi à chaque affichage (choix fait sur une autre page, y compris
+            // une page du widget déjà visitée), à condition que la ligne figure dans cette liste
+            if (key) {
+              const v = readSync(key);
+              if (v && rows.some((r) => r.id === v)) S.sel[b.id] = v;
+            }
             const col = selectorColumn(b, info);
             const gcol = b.selGroup
               ? (S.meta.colsByTable.get(info.sec.tableRef) || []).find((c) => c.colId === b.selGroup)
@@ -5608,11 +5631,10 @@
           rowId = Number(t.value);
         S.sel[id] = rowId;
         const b = S.cfg.blocks.find((x) => x.id === id),
-          sid = b && selectorSyncId(b);
-        if (sid) {
-          writeSync(sid, rowId);
-          for (const o of S.cfg.blocks)
-            if (o.id !== id && isSelector(o) && selectorSyncId(o) === sid) S.sel[o.id] = rowId;
+          key = b && syncKey(b);
+        if (key) {
+          writeSync(key, rowId);
+          for (const o of S.cfg.blocks) if (o.id !== id && isSelector(o) && syncKey(o) === key) S.sel[o.id] = rowId;
         }
         const all = [...document.querySelectorAll("#filters [data-selector]")];
         if (all.length && all[all.length - 1] === t) S.scrollTop = true; // dernière liste : on remonte en haut de page
@@ -6314,14 +6336,6 @@
           scheduleRender();
           return;
         }
-        const xb = ev.target.closest("[data-xb]");
-        if (xb) {
-          ev.stopPropagation();
-          const id = Number(xb.dataset.xb),
-            b = S.cfg.blocks.find((x) => x.id === id);
-          exportCsv(b, `${fileBase()} - ${getInfo(id).title}`.replace(/[\\/:*?"<>|]+/g, "_"));
-          return;
-        }
         if (onRlink(ev)) return;
         // tableau : un clic sur une cellule éditable d'une ligne déjà sélectionnée ouvre la saisie
         // (le double-clic échoue quand la sélection redessine la page entre les deux clics)
@@ -6448,7 +6462,7 @@
         true,
       );
       $("#btnRefresh").addEventListener("click", () => refreshAll());
-      /* ---------- Export : impression / PDF, CSV ---------- */
+      /* ---------- Impression / PDF ---------- */
       function selectionSummary() {
         // « Département : Finistère · Circonscription : … »
         return [...document.querySelectorAll("#filters label")]
@@ -6460,82 +6474,6 @@
           })
           .filter(Boolean)
           .join(" · ");
-      }
-      // fileBase — Nom de fichier d'export : titre de la page + sélections en cours.
-      const fileBase = () =>
-        [
-          S.cfg.title || S.cfg.name || "page",
-          ...[...document.querySelectorAll("#filters select")].map((x) => x.selectedOptions[0]?.textContent || ""),
-        ]
-          .filter(Boolean)
-          .join(" - ")
-          .replace(/[\\/:*?"<>|]+/g, "_")
-          .slice(0, 120);
-      // valeur « tableur » d'une cellule : nombres et dates gardent leur type, le reste est le texte affiché
-      function cellValue(f, v) {
-        if (isErr(v) || isEmpty(v)) return isErr(v) ? textOf(f.col, f.opts, v) : "";
-        const t = baseType(f.col);
-        if ((t === "Numeric" || t === "Int") && typeof v === "number") return v;
-        if (t === "Bool") return v ? "Oui" : "Non";
-        if (t === "Date" && typeof v === "number") return new Date(v * 1000);
-        if (t === "DateTime" && typeof v === "number") return new Date(v * 1000);
-        return textOf(f.col, f.opts, v);
-      }
-      // données d'un bloc telles qu'affichées (filtres, liaisons, sélection, filtre rapide)
-      async function blockData(b) {
-        const info = getInfo(b.id),
-          ctx = { rows: new Map() };
-        let { rows } = await rowsFor(b.id, ctx);
-        if (info.kind === "record") rows = applyUserView(info, rows);
-        rows = qfApply(b, info, rows); // filtre rapide du bloc
-        if (info.kind === "single" && !b.asList) {
-          const id = await selectedRowId(b.id, ctx);
-          const row = S.byId[info.tableId]?.get(id);
-          return { info, kv: true, rows: row ? [row] : [] };
-        }
-        const q = (S.search[b.id] || "").toLowerCase().trim();
-        if (q)
-          rows = rows.filter((r) =>
-            info.fields
-              .map((f) => textOf(f.col, f.opts, r[f.colId]))
-              .join(" ")
-              .toLowerCase()
-              .includes(q),
-          );
-        return { info, kv: false, rows };
-      }
-      // sheetFor — Tableau à deux dimensions (en-têtes + lignes) pour l'export CSV.
-      function sheetFor(d) {
-        const f = d.info.fields;
-        if (d.kv) {
-          // fiche : deux colonnes Champ / Valeur
-          const r = d.rows[0];
-          return [["Champ", "Valeur"], ...f.map((x) => [x.label, r ? cellValue(x, r[x.colId]) : ""])];
-        }
-        return [f.map((x) => x.label), ...d.rows.map((r) => f.map((x) => cellValue(x, r[x.colId])))];
-      }
-      // exportCsv — Export CSV d'un bloc (séparateur « ; », BOM pour Excel, formules neutralisées).
-      async function exportCsv(b, name) {
-        const aoa = sheetFor(await blockData(b));
-        const cell = (v) => {
-          const t =
-            v instanceof Date
-              ? v.toLocaleDateString("fr-FR", { timeZone: "UTC" })
-              : typeof v === "number"
-                ? String(v).replace(".", ",")
-                : String(v ?? "");
-          const u = typeof v === "string" && /^[=+\-@\t\r]/.test(t) ? "'" + t : t; // texte pris pour une formule par Excel : neutralisé
-          return /[;"\n\r]/.test(u) ? `"${u.replace(/"/g, '""')}"` : u;
-        };
-        const csv = "﻿" + aoa.map((r) => r.map(cell).join(";")).join("\r\n"); // séparateur « ; » et BOM : ouverture directe dans Excel en français
-        const a = Object.assign(document.createElement("a"), {
-          href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })),
-          download: `${name}.csv`,
-        });
-        document.body.append(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
       }
       // printPage — Impression / PDF : tout déplier, attendre la fin de l'affichage, puis imprimer.
       async function printPage() {
@@ -8026,6 +7964,7 @@
           S.stored = await readStoredConfigs();
           S.nav = await readNav();
           S.isAdmin = await checkAdmin();
+          S.docKey = /\/doc\/([^/?#]+)/.exec(await guessDocUrl())?.[1] || ""; // pour les sélections partagées
           applyTheme(S.nav.theme);
           if (S.isAdmin && !S.nav.theme) setTimeout(firstTheme, 500); // installation : choix de l'apparence
           $("#btnConfig").hidden = !S.isAdmin;
