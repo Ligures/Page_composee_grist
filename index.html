@@ -3440,7 +3440,7 @@
       // infobulle immédiate des boutons quand leur texte est masqué (écran réduit), au survol comme au toucher
       function tbTip(btn) {
         // les liens vers des formulaires montrent toujours leur commentaire, même quand leur libellé est visible
-        if (!btn.classList.contains("formlink") && getComputedStyle(btn.querySelector(".lbl")).display !== "none") return;
+        if (!btn.classList.contains("formlink") && btn.id !== "btnMenu" && getComputedStyle(btn.querySelector(".lbl")).display !== "none") return;
         tip.textContent = btn.dataset.tip;
         tip.classList.add("on");
         const r = btn.getBoundingClientRect();
@@ -6555,6 +6555,8 @@
         $("#btnHelp").dataset.tip = isNew
           ? `Aide — nouvelle version ${VERSION} : voir les nouveautés`
           : "Aide : guide d'utilisation et nouveautés";
+        // infobulle du menu ☰ : version du widget (et rappel d'une nouvelle version)
+        $("#btnMenu").dataset.tip = `Menu : actions de la page — UX widget grist ${VERSION}${isNew ? " (nouvelle version)" : ""}`;
       }
       // slug — Identifiant d'ancre d'un titre, comme GitHub (« 2. Composer une page » → « 2-composer-une-page »).
       const slug = (t) =>

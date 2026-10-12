@@ -40,7 +40,7 @@ Pour l'installation et le fonctionnement technique, voir le `README.md`.
 En haut de la page, de gauche à droite et de haut en bas :
 
 - **Menu des pages** : un clic affiche une autre page. Seules les pages auxquelles vous avez accès apparaissent.
-- **Menu ☰** (en haut à droite) : il ouvre la liste des actions.
+- **Menu ☰** (en haut à droite) : il ouvre la liste des actions. Son infobulle indique la version du widget.
 
   | Action | Rôle |
   |---|---|
