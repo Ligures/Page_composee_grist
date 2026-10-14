@@ -16,6 +16,21 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.10.6] — Plus de question « quelle configuration ? » aux utilisateurs — 2026-10-14
+
+### Modifié
+- **Choix de la configuration à l'ouverture** : la question « Quelle configuration afficher sur cette page ? » n'est plus posée qu'aux administrateurs. Leur choix devient la **page d'accueil** commune (enregistrée dans `W_Composition`), donc plus de question aux chargements suivants. Un utilisateur n'est jamais interrogé : le widget ouvre la page d'accueil, sinon la configuration de la table du widget, sinon la première lisible.
+- **Page d'accueil** : réglage toujours proposé (section Navigation). Avec « Changer de page dans le widget », elle s'impose ; sinon, elle sert quand le widget n'a pas de configuration enregistrée.
+
+---
+
+## [0.8.10.5] — Correction des références protégées — 2026-10-14
+
+### Corrigé
+- Références vers des lignes non lisibles : quand plusieurs colonnes visent la même table avec des champs affichés différents (par exemple l'UAI et le nom), le widget pouvait afficher le champ d'une autre colonne. Le texte est désormais pris dans la colonne d'affichage propre à chaque référence.
+
+---
+
 ## [0.8.10.4] — Références vers des lignes protégées — 2026-10-14
 
 ### Corrigé

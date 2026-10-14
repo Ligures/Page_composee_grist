@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.10.4)              ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.10.6)              ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -2302,7 +2302,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.10.4"; // voir CHANGELOG.md
+      const VERSION = "0.8.10.6"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -2444,8 +2444,9 @@
 
       /* Texte des références vers des lignes que l'utilisateur ne peut pas lire (règles d'accès par ligne) :
          Grist calcule pour chaque colonne Référence une colonne cachée « gristHelper_Display » dans la table qui
-         référence, lisible même quand la ligne visée ne l'est pas. On note ces textes par table visée et par id,
-         pour les afficher à la place du simple numéro de ligne (0.8.10.4). */
+         référence, lisible même quand la ligne visée ne l'est pas. On note ces textes par colonne Référence et par id
+         (0.8.10.5 : par colonne, et non par table visée — deux colonnes vers la même table peuvent afficher des champs
+         différents, par exemple l'UAI et le nom). */
       S.refDisp = {};
       function noteRefDisplays(tableId, rows) {
         const m = S.meta;
@@ -2456,7 +2457,7 @@
           if ((bt !== "Ref" && bt !== "RefList") || !c.displayCol) continue;
           const disp = m.cols.get(c.displayCol)?.colId;
           if (!disp) continue;
-          const map = (S.refDisp[refTarget(c)] ||= new Map());
+          const map = (S.refDisp[c.id] ||= new Map());
           for (const r of rows) {
             const v = r[c.colId],
               d = r[disp];
@@ -2627,7 +2628,7 @@
       function refText(col, id, depth) {
         if (!id) return "";
         const row = S.byId[refTarget(col)]?.get(id);
-        if (!row) return S.refDisp[refTarget(col)]?.get(id) ?? String(id); // ligne non lisible : texte calculé par Grist
+        if (!row) return S.refDisp[col.id]?.get(id) ?? String(id); // ligne non lisible : texte calculé par Grist
         const vis = col.visibleCol ? S.meta.cols.get(col.visibleCol) : null;
         if (!vis) return `${refTarget(col)}[${id}]`;
         return depth > 2
@@ -7351,18 +7352,14 @@
     </section>
     <section class="cs adv"><h4>5. Navigation entre pages <small>— menu commun à toutes les configurations</small></h4>
       ${L("Adresse du document", `<input type="text" id="cMnUrl" value="${esc(draftNav.url)}" placeholder="https://…/o/organisation/document" style="width:100%">`, "Adresse de base du document Grist (https uniquement), utilisée pour construire les liens vers les pages.")}
-      ${
-        draftNav.inWidget
-          ? L(
-              "Page d'accueil",
-              `<select id="cMnHome"><option value="">— celle de ce widget —</option>${draftNav.items
-                .filter((x) => x.cfg)
-                .map((x) => `<option value="${esc(x.cfg)}" ${x.cfg === draftNav.home ? "selected" : ""}>${esc(x.label || x.cfg)}</option>`)
-                .join("")}</select>`,
-              "Page du menu affichée à l'ouverture du widget. « Celle de ce widget » : la configuration enregistrée dans le widget (comportement habituel).",
-            )
-          : ""
-      }
+      ${L(
+        "Page d'accueil",
+        `<select id="cMnHome"><option value="">— celle de ce widget —</option>${(S.stored || [])
+          .filter((x) => !x.name.startsWith("_"))
+          .map((x) => `<option value="${esc(x.name)}" ${x.name === draftNav.home ? "selected" : ""}>${esc(draftNav.items.find((i) => i.cfg === x.name)?.label || x.name)}</option>`)
+          .join("")}</select>`,
+        "Page affichée à l'ouverture, pour tous les utilisateurs. Avec « Changer de page dans le widget », elle s'impose ; sinon, elle sert quand le widget n'a pas de configuration enregistrée. Aucun choix n'est jamais demandé aux utilisateurs.",
+      )}
       ${C('id="cMnInWidget"', draftNav.inWidget, "Changer de page dans le widget", "Instantané, sans recharger Grist : le widget affiche la configuration de la page choisie. Clic du milieu : ouvre la vraie page Grist.")}
       ${
         draftNav.inWidget
@@ -7980,6 +7977,15 @@
             const x = list.find((y) => y.id === Number(btn.dataset.pick));
             S.cfg = { ...DEFAULTS, ...x.cfg, name: x.name, dataTable: S.ext.tableId };
             S.choosing = false;
+            if (S.isAdmin && !S.nav?.home) {
+              // le choix devient la page par défaut pour tous (plus de question au prochain chargement)
+              S.nav = { ...(S.nav || { url: "", items: [] }), home: x.name };
+              try {
+                await saveConfigToTable({ name: NAV_NAME, nav: S.nav });
+              } catch {
+                /* droits insuffisants */
+              }
+            }
             status("");
             try {
               await grist.setOption("config", S.cfg);
@@ -8016,17 +8022,22 @@
           }
           const opt = S.optCfg || {};
           let hit = opt.name ? S.stored.find((x) => x.name === opt.name) : null;
-          // page d'accueil choisie dans le menu commun (pages changées dans le widget), si elle est lisible
-          const home = S.nav.inWidget && S.nav.home && S.stored.find((x) => x.name === S.nav.home);
-          if (home && cfgReadable(home.name)) hit = home;
+          // page d'accueil (réglée par l'administrateur, commune à tous) : elle s'impose en mode « changer de page
+          // dans le widget », et sert de page par défaut quand le widget n'a pas de configuration enregistrée
+          const home = S.nav.home && S.stored.find((x) => x.name === S.nav.home);
+          if (home && cfgReadable(home.name) && (S.nav.inWidget || !hit)) hit = home;
           if (!hit && !opt.blocks?.length) {
-            // options effacées (nouveau code collé dans le Builder) : on reconnaît la config par la table du widget
+            // options du widget absentes : on reconnaît la config par la table du widget
             const same = S.stored.filter((x) => x.cfg.dataTable && x.cfg.dataTable === S.ext.tableId);
             if (same.length === 1) hit = same[0];
             else if (S.stored.length === 1) hit = S.stored[0];
             else if (S.stored.length > 1) {
-              S.ready = true;
-              return showConfigChooser(same.length ? same : S.stored);
+              // seul un administrateur choisit ; un utilisateur n'est jamais interrogé
+              if (S.isAdmin) {
+                S.ready = true;
+                return showConfigChooser(same.length ? same : S.stored);
+              }
+              hit = same[0] || S.stored.find((x) => cfgReadable(x.name)) || S.stored[0];
             }
           }
           if (hit) S.cfg = { ...DEFAULTS, ...hit.cfg, name: hit.name };
