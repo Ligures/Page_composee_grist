@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.10)                ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.10.1)              ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -415,6 +415,9 @@
         position: static;
         box-shadow: none;
         margin-left: -4px;
+      }
+      .bar > .tb.ico .lbl {
+        display: none; /* icône seule ; libellé en infobulle */
       }
       .tbmenu .tb .lbl {
         display: inline !important; /* libellés toujours visibles dans le menu */
@@ -1208,76 +1211,6 @@
         align-items: center;
         justify-content: center;
         padding: 12px;
-      }
-      /* choix de l'apparence (installation) */
-      #themeAsk {
-        position: fixed;
-        inset: 0;
-        z-index: 50;
-        background: rgba(0, 0, 0, 0.35);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 12px;
-      }
-      #themeAsk .tbox {
-        background: #fff;
-        border-radius: 8px;
-        max-width: 640px;
-        width: 100%;
-        padding: 16px 18px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-      }
-      #themeAsk h3 {
-        margin: 0 0 6px;
-        color: var(--bleu);
-      }
-      #themeAsk p {
-        margin: 0 0 12px;
-        color: var(--muet);
-      }
-      #themeAsk .tchoices {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-      }
-      @media (max-width: 560px) {
-        #themeAsk .tchoices {
-          grid-template-columns: 1fr;
-        }
-      }
-      #themeAsk .tcard {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        text-align: left;
-        border: 2px solid var(--bord);
-        border-radius: 6px;
-        background: #fff;
-        padding: 10px 12px;
-        cursor: pointer;
-      }
-      #themeAsk .tcard:hover {
-        border-color: currentColor;
-      }
-      #themeAsk .tcard.dsfr {
-        color: #000091;
-        font-family: "Marianne", Arial, sans-serif;
-      }
-      #themeAsk .tcard.neutre {
-        color: #1f4e8c;
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      }
-      #themeAsk .tcard > b {
-        font-size: 15px;
-      }
-      #themeAsk .tcard span,
-      #themeAsk .tcard small {
-        color: #161616;
-      }
-      #themeAsk .tcard small {
-        color: var(--muet);
-        line-height: 1.35;
       }
       #fmodal {
         position: fixed;
@@ -2167,6 +2100,32 @@
         <span class="spacer"></span>
         <!-- liens vers des formulaires Grist (réglés par page, facultatifs) -->
         <span id="forms"></span>
+        <!-- actions directes (0.8.10.1) : actualiser, configurer (administrateurs) -->
+        <button
+          class="tb ico"
+          id="btnRefresh"
+          aria-label="Actualiser"
+          data-tip="Actualiser : recharger les données et la configuration des vues"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+            <path d="M20 4v5h-5" /></svg
+          ><span class="lbl">Actualiser</span>
+        </button>
+        <button
+          class="tb ico"
+          id="btnConfig"
+          aria-label="Configurer"
+          data-tip="Configurer : choisir et régler les vues"
+          hidden
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+            /></svg
+          ><span class="lbl">Configurer</span>
+        </button>
         <!-- menu hamburger : les boutons de la barre d'outils sont regroupés dans une liste déroulante -->
         <button class="tb" id="btnMenu" aria-haspopup="menu" aria-expanded="false" aria-controls="tbMenu" data-tip="Menu : actions de la page">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg
@@ -2176,17 +2135,6 @@
         <button class="tb" id="btnFold" data-tip="Tout déplier">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9l5-5 5 5M7 15l5 5 5-5" /></svg
           ><span class="lbl">Tout déplier</span>
-        </button>
-        <button
-          class="tb"
-          id="btnRefresh"
-          aria-label="Actualiser"
-          data-tip="Actualiser : recharger les données et la configuration des vues"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20 12a8 8 0 1 1-2.34-5.66" />
-            <path d="M20 4v5h-5" /></svg
-          ><span class="lbl">Actualiser</span>
         </button>
         <button class="tb" id="btnSingle" aria-label="Plein écran" data-tip="Plein écran : ouvrir cette page dans un nouvel onglet, sans les menus de Grist">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg
@@ -2220,20 +2168,6 @@
             <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.6" />
             <path d="M12 17.5h.01" /></svg
           ><span class="lbl">Aide</span><span class="newdot" hidden></span>
-        </button>
-        <button
-          class="tb"
-          id="btnConfig"
-          aria-label="Configurer"
-          data-tip="Configurer : choisir et régler les vues"
-          hidden
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="3" />
-            <path
-              d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
-            /></svg
-          ><span class="lbl">Configurer</span>
         </button>
         </div>
       </div>
@@ -2339,7 +2273,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.10"; // voir CHANGELOG.md
+      const VERSION = "0.8.10.1"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -3080,8 +3014,11 @@
       document.addEventListener("mousedown", (e) => { if (!e.target.closest(".qf")) qfClose(); });
       window.addEventListener("scroll", qfClose, true);
       // qfCol — Colonne du filtre rapide dans la table d'un bloc (null si le champ est absent ou non configuré).
-      function qfCol(b, info) {
-        const id = b.qfField;
+      // Deux filtres rapides par bloc (0.8.10.1) : emplacement k = 1 (qfField, qfDefault) ou 2 (qfField2, qfDefault2).
+      const qfFieldOf = (b, k = 1) => (k === 2 ? b.qfField2 : b.qfField);
+      const qfKey = (b, k = 1) => (k === 2 ? `${b.id}:2` : b.id); // clé du choix de l'utilisateur dans S.qf
+      function qfCol(b, info, k = 1) {
+        const id = qfFieldOf(b, k);
         if (!id || !(QF_KINDS.includes(info.kind) || (info.kind === "single" && b.asList))) return null;
         return (S.meta.colsByTable.get(info.sec.tableRef) || []).find((c) => c.colId === id) || null;
       }
@@ -3091,23 +3028,27 @@
       const qfSame = (a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }) === 0;
       // qfCur — Valeur active pour un bloc : choix de l'utilisateur pendant la session, sinon valeur à l'ouverture
       //   du bloc, sinon « Tous » (""). S.qf est vidé à chaque enregistrement de la configuration.
-      function qfCur(b) {
-        return S.qf[b.id] !== undefined ? S.qf[b.id] : b.qfDefault || "";
+      function qfCur(b, k = 1) {
+        const key = qfKey(b, k);
+        return S.qf[key] !== undefined ? S.qf[key] : (k === 2 ? b.qfDefault2 : b.qfDefault) || "";
       }
       // qfSync — Applique la valeur choisie à tous les blocs de la page dont le filtre rapide porte sur le même
       //   champ (même identifiant de colonne ou même libellé) : clic milieu ou Maj+clic sur une valeur.
-      function qfSync(fromId, v) {
+      function qfSync(fromId, v, fromK = 1) {
         const src = S.cfg.blocks.find((x) => x.id === fromId),
           srcInfo = src && getInfo(src.id),
-          col = src && srcInfo && qfCol(src, srcInfo);
+          col = src && srcInfo && qfCol(src, srcInfo, fromK);
         if (!col) return;
         let n = 0;
         for (const b of S.cfg.blocks) {
-          const info = getInfo(b.id),
-            c = info && qfCol(b, info);
-          if (c && (c.colId === col.colId || (c.label && c.label === col.label))) {
-            S.qf[b.id] = v;
-            n++;
+          const info = getInfo(b.id);
+          if (!info) continue;
+          for (const k of [1, 2]) {
+            const c = qfCol(b, info, k);
+            if (c && (c.colId === col.colId || (c.label && c.label === col.label))) {
+              S.qf[qfKey(b, k)] = v;
+              n++;
+            }
           }
         }
         qfClose();
@@ -3129,8 +3070,11 @@
       }
       // qfApply — Ne garde que les lignes dont le champ vaut la valeur choisie pour ce bloc.
       function qfApply(b, info, rows) {
-        const col = qfCol(b, info),
-          v = qfCur(b);
+        return qfApplyOne(b, info, qfApplyOne(b, info, rows, 1), 2); // les deux filtres se cumulent
+      }
+      function qfApplyOne(b, info, rows, k) {
+        const col = qfCol(b, info, k),
+          v = qfCur(b, k);
         if (!col || !v) return rows;
         const texts = rows.map((r) => qfText(col, r));
         if (texts.some((t) => qfSame(t, v))) return rows.filter((r, i) => qfSame(texts[i], v)); // valeur présente : égalité
@@ -3153,9 +3097,12 @@
           .trim();
       // qfHtml — Sélecteur de l'en-tête : boutons « Tous | valeurs » (liste déroulante au-delà de 4 valeurs).
       function qfHtml(b, info, allRows) {
-        const col = qfCol(b, info);
+        return qfHtmlOne(b, info, allRows, 1) + qfHtmlOne(b, info, allRows, 2);
+      }
+      function qfHtmlOne(b, info, allRows, k) {
+        const col = qfCol(b, info, k);
         if (!col) return "";
-        const cur = qfCur(b);
+        const cur = qfCur(b, k);
         const vals = [...new Set(allRows.map((r) => qfText(col, r)))].sort(COLL.compare);
         // valeur synchronisée absente de ce bloc (« Privé » alors que le bloc a « Privé sous contrat »…) :
         // pas de bouton supplémentaire ; les valeurs rapprochées sont surlignées (voir qfApply)
@@ -3171,7 +3118,7 @@
         const sync = `\nClic milieu (ou Maj+clic) : appliquer à tous les blocs de la page filtrés sur « ${name} »`;
         const pr = cur ? `<span class="qf-print">${esc(name)} : ${esc(vals.find((x) => qfSame(x, cur)) || cur)}</span>` : ""; // impression
         if (vals.length > 4)
-          return `${pr}<select class="qfs" data-qfs="${b.id}" title="${esc(tip + "\nClic milieu sur la liste : appliquer la valeur choisie à tous les blocs de la page filtrés sur « " + name + " »")}"><option value="">${esc(col.label || col.colId)} : tous</option>${
+          return `${pr}<select class="qfs" data-qfs="${b.id}" data-qk="${k}" title="${esc(tip + "\nClic milieu sur la liste : appliquer la valeur choisie à tous les blocs de la page filtrés sur « " + name + " »")}"><option value="">${esc(col.label || col.colId)} : tous</option>${
             exact ? "" : `<option value="${esc(cur)}" selected>${esc(cur)} (${vals.filter(isOn).length} valeurs)</option>`
           }${vals.map((v) => `<option value="${esc(v)}" ${cur && exact && qfSame(v, cur) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`;
         // trois présentations, choisies par fitQf() selon la place dans l'en-tête :
@@ -3179,9 +3126,9 @@
         //   · « icon » icône de filtre (pastille si un filtre est actif), liste au clic
         const label = cur ? vals.find((x) => qfSame(x, cur)) || cur : "Tous"; // valeur rapprochée : son propre texte
         return `${pr}<span class="qf full${cur ? " active" : ""}" title="${esc(tip)}">
-          <button type="button" class="qf-cur" data-qftog="${b.id}" aria-haspopup="true" aria-label="${esc(tip)} : ${esc(label)}">${QF_ICON}<span class="qf-lab">${esc(label)}</span><span class="qf-caret">▾</span></button>
+          <button type="button" class="qf-cur" data-qftog="${b.id}" data-qk="${k}" aria-haspopup="true" aria-label="${esc(tip)} : ${esc(label)}">${QF_ICON}<span class="qf-lab">${esc(label)}</span><span class="qf-caret">▾</span></button>
           <span class="qf-opts">${[["", "Tous"], ...vals.map((v) => [v, v])]
-            .map(([v, l]) => `<button type="button" data-qf="${b.id}" data-qv="${esc(v)}" class="${(v ? cur && isOn(v) : !cur) ? "on" : ""}" title="${esc(`Clic : ${v ? `n'afficher que « ${l} »` : "tout afficher"} dans ce bloc${sync}`)}">${esc(l)}</button>`)
+            .map(([v, l]) => `<button type="button" data-qf="${b.id}" data-qk="${k}" data-qv="${esc(v)}" class="${(v ? cur && isOn(v) : !cur) ? "on" : ""}" title="${esc(`Clic : ${v ? `n'afficher que « ${l} »` : "tout afficher"} dans ce bloc${sync}`)}">${esc(l)}</button>`)
             .join("")}</span></span>`;
       }
 
@@ -5882,8 +5829,8 @@
             try {
               let { rows } = await rowsFor(b.id, ctx);
               if (info.kind === "record") rows = applyUserView(info, rows); // tri et filtres choisis dans les en-têtes
-              const qc = qfCol(b, info);
-              if (qc) await ensureRefTables([qc]); // champ du filtre rapide de type référence : texte affiché
+              const qcs = [qfCol(b, info, 1), qfCol(b, info, 2)].filter(Boolean);
+              if (qcs.length) await ensureRefTables(qcs); // champ du filtre rapide de type référence : texte affiché
               const before = rows.length; // lignes avant le filtre rapide
               const qfCtl = before ? qfHtml(b, info, rows) : ""; // filtre rapide : sélecteur calculé sur toutes les lignes…
               rows = qfApply(b, info, rows); // …puis seules les lignes choisies sont affichées
@@ -5908,7 +5855,7 @@
                 }
                 // bloc masqué s'il n'a aucune donnée ; il reste affiché seulement si c'est le filtre rapide qui l'a vidé
                 // (pour pouvoir revenir à « Tous »)
-                if (S.cfg.hideEmptyBlocks && !(before && qfCur(b))) {
+                if (S.cfg.hideEmptyBlocks && !(before && (qfCur(b) || qfCur(b, 2)))) {
                   skipped.empty.push(info.title);
                   continue;
                 }
@@ -6317,8 +6264,9 @@
         const qb = ev.target.closest("[data-qf]"); // filtre rapide : bouton d'une valeur
         if (qb) {
           ev.stopPropagation();
-          if (ev.shiftKey) return qfSync(Number(qb.dataset.qf), qb.dataset.qv); // Maj+clic : tous les blocs
-          S.qf[Number(qb.dataset.qf)] = qb.dataset.qv;
+          const k = Number(qb.dataset.qk) || 1;
+          if (ev.shiftKey) return qfSync(Number(qb.dataset.qf), qb.dataset.qv, k); // Maj+clic : tous les blocs
+          S.qf[k === 2 ? `${qb.dataset.qf}:2` : Number(qb.dataset.qf)] = qb.dataset.qv;
           scheduleRender();
           return;
         }
@@ -6405,13 +6353,13 @@
         if (!qb && !qs) return;
         ev.preventDefault();
         ev.stopPropagation();
-        if (qb) qfSync(Number(qb.dataset.qf), qb.dataset.qv);
-        else qfSync(Number(qs.dataset.qfs), qs.value);
+        if (qb) qfSync(Number(qb.dataset.qf), qb.dataset.qv, Number(qb.dataset.qk) || 1);
+        else qfSync(Number(qs.dataset.qfs), qs.value, Number(qs.dataset.qk) || 1);
       });
       $("#grid").addEventListener("change", (ev) => {
         const qs = ev.target.closest("[data-qfs]"); // filtre rapide au-delà de 4 valeurs
         if (qs) {
-          S.qf[Number(qs.dataset.qfs)] = qs.value;
+          S.qf[Number(qs.dataset.qk) === 2 ? `${qs.dataset.qfs}:2` : Number(qs.dataset.qfs)] = qs.value;
           scheduleRender();
         }
       });
@@ -6664,7 +6612,7 @@
       /* Colonnes choisies dans la configuration : elles sont enregistrées par identifiant (colId), qui change quand
          on renomme une colonne dans Grist. On garde aussi leur numéro interne (colRef, stable) dans b._refs pour
          retrouver le nouvel identifiant automatiquement. */
-      const COL_FIELDS = ["mapLabel", "mapColor", "mapRing", "mapCommune", "selCol", "selGroup", "zoneSum", "qfField"];
+      const COL_FIELDS = ["mapLabel", "mapColor", "mapRing", "mapCommune", "selCol", "selGroup", "zoneSum", "qfField", "qfField2"];
       const COL_SPECIAL = new Set(["", "__qpv", "__pos"]); // valeurs qui ne sont pas des colonnes
       // colFieldTable — Table d'une option de colonne (zoneKey / zoneVal : table choisie pour colorer les zones).
       function colFieldTable(b, f) {
@@ -6748,40 +6696,33 @@
         while (used.has(n)) n = `${base} ${++k}`;
         return n;
       }
-      /* Droit de configurer : contrôlé par une table témoin protégée par une règle d'accès.
-   - table W_Admin absente : tout le monde peut configurer (comportement initial)
-   - table présente : seuls ceux qui en voient au moins une ligne peuvent configurer */
+      /* Droit de configurer : contrôlé par une table témoin W_Admin, protégée par une règle d'accès.
+   - seuls ceux qui en lisent au moins une ligne peuvent configurer ;
+   - exception : document encore sans configuration (installation). W_Admin est alors créée au premier
+     enregistrement, avec une ligne : il reste à la protéger par une règle d'accès. */
       const ADMIN_TABLE = "W_Admin";
-      const SECU_NAME = "_Securite";
-      // checkAdmin — L'utilisateur peut-il configurer ? (voit au moins une ligne de W_Admin, ou protection absente).
+      // checkAdmin — L'utilisateur peut-il configurer ? (lit au moins une ligne de W_Admin, ou installation).
       async function checkAdmin() {
+        /* Fermé par défaut (0.8.10). Configurer est permis :
+           - à qui lit au moins une ligne de W_Admin (table protégée par une règle d'accès) ;
+           - sinon, seulement tant que le document n'a encore aucune configuration (installation).
+           Avant, une table W_Admin invisible était prise pour une table absente, sauf si un témoin « _Securite »
+           avait été posé dans W_Composition et restait lisible : sans ce témoin, un éditeur qui ne voyait pas W_Admin
+           pouvait tout de même configurer. */
+        try {
+          const t = await grist.docApi.fetchTable(ADMIN_TABLE); // échoue si la table est absente ou interdite
+          if ((t.id || []).length > 0) return true;
+        } catch {
+          /* absente ou non lisible : voir ci-dessous */
+        }
         try {
           const tables = await grist.docApi.listTables();
-          // Une table entièrement interdite par une règle d'accès disparaît de la liste pour l'utilisateur :
-          // on ne peut donc pas distinguer « absente » de « interdite ». Un témoin dans W_Composition
-          // (lisible par tous) indique que la protection est en place.
-          if (!tables.includes(ADMIN_TABLE)) return !(await secuFlag(tables));
-          const t = await grist.docApi.fetchTable(ADMIN_TABLE);
-          const ok = (t.id || []).length > 0;
-          if (ok && !(await secuFlag(tables))) {
-            // un propriétaire voit W_Admin : on pose le témoin une fois pour toutes
-            try {
-              await saveConfigToTable({ name: SECU_NAME, adminTable: true });
-            } catch {
-              /* pas de droit d'écriture */
-            }
-          }
-          return ok;
-        } catch {
-          return false;
-        }
-      }
-      // secuFlag — Témoin « _Securite » dans W_Composition : indique que la protection par W_Admin est en place.
-      async function secuFlag(tables) {
-        if (!tables.includes(CFG_TABLE)) return false;
-        try {
-          const rows = toRows(await grist.docApi.fetchTable(CFG_TABLE));
-          return !!parseJSON(rows.find((r) => String(r.Nom || "") === SECU_NAME)?.Config, {})?.adminTable;
+          if (tables.includes(ADMIN_TABLE)) return false; // table visible mais vide pour cet utilisateur
+          // installation : aucune configuration enregistrée (en dehors des lignes techniques « _… »)
+          const stored = tables.includes(CFG_TABLE) ? toRows(await grist.docApi.fetchTable(CFG_TABLE)) : [];
+          const configured = stored.some((r) => !String(r.Nom || "").startsWith("_"));
+          if (!configured) S.adminHint = true; // rappel : créer et protéger W_Admin
+          return !configured;
         } catch {
           return false;
         }
@@ -7080,15 +7021,28 @@
           if (!(["record", "detail", "chart", "custom"].includes(s.parentKey) || (s.parentKey === "single" && b.asList)) || isSelector(b)) return "";
           const all = (m.colsByTable.get(s.tableRef) || []).filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort");
           const shown = new Set((getInfo(b.id)?.fields || []).map((f) => f.col?.colId));
-          const opt = (c) => `<option value="${esc(c.colId)}" ${c.colId === b.qfField ? "selected" : ""}>${esc(c.label || c.colId)}</option>`;
           const inView = byLabel(all.filter((c) => shown.has(c.colId))), others = byLabel(all.filter((c) => !shown.has(c.colId)));
-          const field = `<select data-f="qfField" data-i="${i}"><option value="">aucun</option>${inView.length ? `<optgroup label="Champs de la vue">${inView.map(opt).join("")}</optgroup>` : ""}${others.length ? `<optgroup label="Autres colonnes de la table">${others.map(opt).join("")}</optgroup>` : ""}</select>`;
-          let out = L("Filtre rapide", field, "Ajoute dans l'en-tête du bloc des boutons « Tous | valeur 1 | valeur 2… » (liste déroulante au-delà de 4 valeurs) pour filtrer ses lignes sur ce champ. Exemple : Reseau → Tous | Public | Privé.");
-          const qc = b.qfField && all.find((c) => c.colId === b.qfField);
-          if (qc) {
-            const vals = qfValuesOf([qc]);
-            if (b.qfDefault && !vals.some((v) => qfSame(v, b.qfDefault))) vals.push(b.qfDefault);
-            out += L("Filtre à l'ouverture", `<select data-f="qfDefault" data-i="${i}"><option value="">Tous</option>${vals.map((v) => `<option value="${esc(v)}" ${b.qfDefault && qfSame(v, b.qfDefault) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`, `Valeur de « ${qc.label || qc.colId} » sélectionnée à l'ouverture de la page. L'utilisateur peut ensuite changer.`);
+          let out = "";
+          // deux emplacements : 2e filtre proposé une fois le premier choisi ; les deux se cumulent
+          for (const k of [1, 2]) {
+            const fk = k === 2 ? "qfField2" : "qfField",
+              dk = k === 2 ? "qfDefault2" : "qfDefault";
+            if (k === 2 && !b.qfField) break;
+            const opt = (c) => `<option value="${esc(c.colId)}" ${c.colId === b[fk] ? "selected" : ""}>${esc(c.label || c.colId)}</option>`;
+            const field = `<select data-f="${fk}" data-i="${i}"><option value="">aucun</option>${inView.length ? `<optgroup label="Champs de la vue">${inView.map(opt).join("")}</optgroup>` : ""}${others.length ? `<optgroup label="Autres colonnes de la table">${others.map(opt).join("")}</optgroup>` : ""}</select>`;
+            out += L(
+              k === 2 ? "2ᵉ filtre rapide" : "Filtre rapide",
+              field,
+              k === 2
+                ? "Second filtre dans l'en-tête du bloc, sur un autre champ. Il se cumule avec le premier (par exemple Réseau = Public et Type = Ecole)."
+                : "Ajoute dans l'en-tête du bloc des boutons « Tous | valeur 1 | valeur 2… » (liste déroulante au-delà de 4 valeurs) pour filtrer ses lignes sur ce champ. Exemple : Reseau → Tous | Public | Privé.",
+            );
+            const qc = b[fk] && all.find((c) => c.colId === b[fk]);
+            if (qc) {
+              const vals = qfValuesOf([qc]);
+              if (b[dk] && !vals.some((v) => qfSame(v, b[dk]))) vals.push(b[dk]);
+              out += L(k === 2 ? "2ᵉ filtre à l'ouverture" : "Filtre à l'ouverture", `<select data-f="${dk}" data-i="${i}"><option value="">Tous</option>${vals.map((v) => `<option value="${esc(v)}" ${b[dk] && qfSame(v, b[dk]) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`, `Valeur de « ${qc.label || qc.colId} » sélectionnée à l'ouverture de la page. L'utilisateur peut ensuite changer.`);
+            }
           }
           return out;
         })()}
@@ -7342,6 +7296,18 @@
     </section>
     <section class="cs adv"><h4>5. Navigation entre pages <small>— menu commun à toutes les configurations</small></h4>
       ${L("Adresse du document", `<input type="text" id="cMnUrl" value="${esc(draftNav.url)}" placeholder="https://…/o/organisation/document" style="width:100%">`, "Adresse de base du document Grist (https uniquement), utilisée pour construire les liens vers les pages.")}
+      ${
+        draftNav.inWidget
+          ? L(
+              "Page d'accueil",
+              `<select id="cMnHome"><option value="">— celle de ce widget —</option>${draftNav.items
+                .filter((x) => x.cfg)
+                .map((x) => `<option value="${esc(x.cfg)}" ${x.cfg === draftNav.home ? "selected" : ""}>${esc(x.label || x.cfg)}</option>`)
+                .join("")}</select>`,
+              "Page du menu affichée à l'ouverture du widget. « Celle de ce widget » : la configuration enregistrée dans le widget (comportement habituel).",
+            )
+          : ""
+      }
       ${C('id="cMnInWidget"', draftNav.inWidget, "Changer de page dans le widget", "Instantané, sans recharger Grist : le widget affiche la configuration de la page choisie. Clic du milieu : ouvre la vraie page Grist.")}
       ${
         draftNav.inWidget
@@ -7394,6 +7360,7 @@
           return;
         }
         if (t.dataset.f === "qfField") draft.blocks[Number(t.dataset.i)].qfDefault = ""; // nouveau champ : valeur à revoir
+        if (t.dataset.f === "qfField2") draft.blocks[Number(t.dataset.i)].qfDefault2 = "";
         if (t.dataset.f === "mapZone") draft.blocks[Number(t.dataset.i)].mapCommunes = false; // ancienne option remplacée par « Zonage »
         if (t.dataset.f) {
           const b = draft.blocks[Number(t.dataset.i)];
@@ -7418,6 +7385,8 @@
             "startFold",
             "qfDefault",
             "qfField",
+            "qfDefault2",
+            "qfField2",
           ].includes(t.dataset.f)
             ? t.value
             : Number(t.value) || 0;
@@ -7530,6 +7499,7 @@
         if (t.id === "cName") draft.name = t.value;
         if (t.id === "cShowAfter") draftShowAfter = t.checked;
         if (t.id === "cTheme") draftNav.theme = t.value;
+        if (t.id === "cMnHome") draftNav.home = t.value;
         if (t.dataset.fml) draft.forms[Number(t.dataset.fml)].label = t.value.trim();
         if (t.dataset.fmt) draft.forms[Number(t.dataset.fmt)].tip = t.value.trim();
         if (t.dataset.fmtab) draft.forms[Number(t.dataset.fmtab)].tab = t.checked;
@@ -7684,53 +7654,13 @@
       const NAV_NAME = "_Navigation";
       /* ---------- Apparence : DSFR (services de l'État) ou neutre ----------
          Choix commun au document, rangé avec le menu commun (ligne _Navigation de W_Composition, nav.theme).
-         Non choisi : apparence DSFR (comportement antérieur) et, pour un administrateur, proposition du choix. */
+         Non choisi : apparence DSFR. Le choix se fait dans la configuration (section Affichage), par un administrateur. */
       const NEUTRAL_BLUE = "#1f4e8c";
       function applyTheme(theme) {
         const neutre = theme === "neutre";
         document.documentElement.classList.toggle("neutre", neutre);
         BRAND.c = neutre ? NEUTRAL_BLUE : "#000091";
         PALETTE[0] = MAP_COLORS[0] = BRAND.c;
-      }
-      // askTheme — Fenêtre de choix de l'apparence (installation du widget, ou bouton de la configuration).
-      function askTheme() {
-        return new Promise((resolve) => {
-          const d = document.createElement("div");
-          d.id = "themeAsk";
-          d.setAttribute("role", "dialog");
-          d.setAttribute("aria-modal", "true");
-          d.innerHTML = `<div class="tbox">
-            <h3>Apparence du widget</h3>
-            <p>Choisissez le style de ce document. Il s'applique à toutes les pages et se modifie ensuite dans la configuration (section Affichage).</p>
-            <div class="tchoices">
-              <button type="button" data-theme="dsfr" class="tcard dsfr"><b>Style État (DSFR)</b>
-                <span>Police Marianne, bleu France.</span>
-                <small>Réservé aux <b>services de l'État</b> : le Système de design de l'État et la police Marianne sont soumis à leurs propres <a href="https://www.systeme-de-design.gouv.fr/composants-et-modeles" target="_blank" rel="noopener noreferrer">conditions d'utilisation</a>, qui en interdisent l'usage par d'autres structures.</small></button>
-              <button type="button" data-theme="neutre" class="tcard neutre"><b>Style neutre</b>
-                <span>Police du système, bleu neutre.</span>
-                <small>Pour toute autre structure : collectivité, association, entreprise… Mêmes fonctions, sans l'identité visuelle de l'État.</small></button>
-            </div></div>`;
-          document.body.append(d);
-          d.addEventListener("click", (e) => {
-            if (e.target.closest("a")) return; // lien vers les conditions d'utilisation
-            const b = e.target.closest("[data-theme]");
-            if (!b) return;
-            d.remove();
-            resolve(b.dataset.theme);
-          });
-        });
-      }
-      // firstTheme — Première ouverture par un administrateur : choix de l'apparence, enregistré pour tout le document.
-      async function firstTheme() {
-        const t = await askTheme();
-        S.nav = { ...(S.nav || { url: "", items: [] }), theme: t };
-        applyTheme(t);
-        try {
-          await saveConfigToTable({ name: NAV_NAME, nav: S.nav });
-        } catch {
-          /* droits insuffisants : le choix vaut pour cette session */
-        }
-        scheduleRender();
       }
       // readNav — Lit le menu de navigation commun (ligne _Navigation de W_Composition).
       async function readNav() {
@@ -7745,6 +7675,7 @@
             inWidget: !!n.inWidget,
             items: Array.isArray(n.items) ? n.items : [],
             theme: n.theme === "neutre" || n.theme === "dsfr" ? n.theme : "", // "" : pas encore choisi
+            home: n.home || "", // configuration ouverte à l'arrivée (mode « changer de page dans le widget »)
           };
         } catch {
           return { url: "", items: [] };
@@ -7954,6 +7885,18 @@
             ],
           ]);
         }
+        if (S.adminHint && !tables.includes(ADMIN_TABLE)) {
+          // installation : la table des administrateurs est créée avec une ligne (à protéger par une règle d'accès)
+          try {
+            await grist.docApi.applyUserActions([
+              ["AddTable", ADMIN_TABLE, [{ id: "Note", type: "Text" }]],
+              ["AddRecord", ADMIN_TABLE, null, { Note: "Qui lit cette ligne peut configurer le widget : réserver la lecture aux administrateurs (règle d'accès)." }],
+            ]);
+            S.adminHint = false;
+          } catch {
+            /* droits insuffisants pour créer une table */
+          }
+        }
         const rows = toRows(await grist.docApi.fetchTable(CFG_TABLE));
         const hit = rows.find((r) => String(r.Nom || "") === cfg.name);
         const json = JSON.stringify(cfg, null, 1);
@@ -8009,7 +7952,6 @@
           S.isAdmin = await checkAdmin();
           S.docKey = /\/doc\/([^/?#]+)/.exec(await guessDocUrl())?.[1] || ""; // pour les sélections partagées
           applyTheme(S.nav.theme);
-          if (S.isAdmin && !S.nav.theme) setTimeout(firstTheme, 500); // installation : choix de l'apparence
           $("#btnConfig").hidden = !S.isAdmin;
           $("#btnLayout").hidden = !S.isAdmin;
           try {
@@ -8019,6 +7961,9 @@
           }
           const opt = S.optCfg || {};
           let hit = opt.name ? S.stored.find((x) => x.name === opt.name) : null;
+          // page d'accueil choisie dans le menu commun (pages changées dans le widget), si elle est lisible
+          const home = S.nav.inWidget && S.nav.home && S.stored.find((x) => x.name === S.nav.home);
+          if (home && cfgReadable(home.name)) hit = home;
           if (!hit && !opt.blocks?.length) {
             // options effacées (nouveau code collé dans le Builder) : on reconnaît la config par la table du widget
             const same = S.stored.filter((x) => x.cfg.dataTable && x.cfg.dataTable === S.ext.tableId);

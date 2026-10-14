@@ -40,16 +40,18 @@ Pour l'installation et le fonctionnement technique, voir le `README.md`.
 En haut de la page, de gauche à droite et de haut en bas :
 
 - **Menu des pages** : un clic affiche une autre page. Seules les pages auxquelles vous avez accès apparaissent.
-- **Menu ☰** (en haut à droite) : il ouvre la liste des actions. Son infobulle indique la version du widget.
+- **Boutons directs**, à gauche du menu ☰ :
+  - **⟳ Actualiser** : recharge les données et la configuration des vues ;
+  - **⚙ Configurer** : réservé aux administrateurs (partie 2).
+- **Menu ☰** (en haut à droite) : il ouvre la liste des autres actions. Son infobulle indique la version du widget.
 
   | Action | Rôle |
   |---|---|
   | Tout replier / Tout déplier | Replie ou déplie tous les blocs d'un coup |
-  | Actualiser | Recharge les données et la configuration des vues |
   | Plein écran | Ouvre cette page dans un nouvel onglet, sans les menus de Grist (mode page unique) |
   | Imprimer | Imprime la page ou l'enregistre en PDF |
   | Aide | Ouvre ce guide ; l'onglet Nouveautés présente les évolutions du widget |
-  | Disposition, Configurer | Réservés aux administrateurs (partie 2) |
+  | Disposition | Réservé aux administrateurs (partie 2) |
 
   Une pastille rouge sur ☰ signale une nouvelle version du widget : elle disparaît après lecture de l'onglet Nouveautés.
 - **Listes de sélection** (par exemple Département, Circonscription, École) : choisir une valeur filtre les blocs de la page.
@@ -100,6 +102,8 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 - **Quartiers prioritaires (QPV)** : en pointillés rouges. L'infobulle d'un établissement indique s'il est dans un QPV ou à proximité.
 - **Sélection** : cliquer sur un point le sélectionne et met à jour les blocs liés.
 
+**Confidentialité** : les cartes n'envoient aucune donnée de vos tables à l'extérieur. Seuls des codes géographiques (département, communes), parfois la position d'un point sans code INSEE, et la zone affichée (fond de carte) sont transmis à des services publics. Le détail figure dans le README, section « Sécurité et confidentialité ».
+
 ### Imprimer et exporter
 
 - **Imprimer** : tous les blocs sont dépliés le temps de l'impression. Le titre de la page et les sélections en cours figurent en tête. Pour un PDF, choisir « Enregistrer au format PDF » dans la fenêtre d'impression. Les boutons de filtre rapide ne sont pas imprimés ; un filtre actif est rappelé en texte à côté du titre du bloc (par exemple « Réseau : Privé »).
@@ -115,11 +119,11 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 
 ## 2. Composer une page (administrateurs)
 
-Les actions **Disposition** et **Configurer** du menu ☰ n'apparaissent qu'aux administrateurs : les personnes qui ont accès à la table `W_Admin`.
+Le bouton **⚙ Configurer** et l'action **Disposition** du menu ☰ n'apparaissent qu'aux administrateurs : les personnes qui ont accès à la table `W_Admin`.
 
 ### Ouvrir la configuration
 
-**☰ → Configurer** ouvre un panneau sur la moitié droite de l'écran :
+Le bouton **⚙ Configurer** ouvre un panneau sur la moitié droite de l'écran :
 - l'**aperçu de la disposition** reste affiché en haut ;
 - chaque option est expliquée au **survol** de son libellé (soulignement en pointillés) ;
 - rien n'est appliqué avant **Enregistrer**, et **Annuler** ferme le panneau sans rien changer.
@@ -170,6 +174,7 @@ Pour ajouter les boutons `Tous | Public | Privé` à un bloc :
    - Les champs de la vue sont proposés d'abord, puis les autres colonnes de la table.
    - Un champ non affiché peut donc servir de filtre.
 2. **Filtre à l'ouverture** : *Tous*, ou la valeur à présélectionner.
+3. Facultatif : **2ᵉ filtre rapide** sur un autre champ (par exemple *Type*), avec sa propre valeur à l'ouverture. Les deux filtres se cumulent : *Public* et *Ecole*.
 
 Le filtre est disponible pour les tableaux, les listes de fiches, les graphiques et les cartes.
 
@@ -211,6 +216,7 @@ Section **5. Navigation entre pages**. Ce réglage est commun à toutes les conf
 
 - **Adresse du document** : adresse de base du document Grist (https).
 - **Changer de page dans le widget** : le menu bascule de configuration sans recharger Grist. Recommandé quand toutes les configurations sont réunies dans une seule page Grist.
+- **Page d'accueil** (avec l'option précédente) : page du menu affichée à l'ouverture du widget. Par défaut, la configuration enregistrée dans le widget.
 - **Ouvrir les pages en mode page unique** : les liens ouvrent Grist sans ses menus. Proposé seulement sans « Changer de page dans le widget » ; sinon, utiliser **☰ → Plein écran**.
 - **Pour chaque lien** :
   - libellé ;
@@ -224,7 +230,7 @@ Section **4. Affichage**, **Apparence (tout le document)** :
 - **Style État (DSFR)** : police Marianne et bleu France. Réservé aux **services de l'État** par les conditions d'utilisation du Système de design de l'État.
 - **Style neutre** : police du système et bleu neutre, pour toute autre structure (collectivité, association, entreprise…).
 
-À la première ouverture du widget dans un document, l'administrateur est invité à choisir. Le choix vaut pour toutes les pages du document.
+Sans choix, le widget s'affiche en style État. Le choix vaut pour toutes les pages du document ; il n'est jamais proposé aux utilisateurs.
 
 ### Enregistrer
 
@@ -235,16 +241,16 @@ Section **4. Affichage**, **Apparence (tout le document)** :
 ## 3. Questions fréquentes
 
 **Une valeur ne correspond pas à ce que montre Grist.**
-Le widget affiche les colonnes de la vue Grist. Vérifiez la vue native, puis choisissez **☰ → Actualiser**.
+Le widget affiche les colonnes de la vue Grist. Vérifiez la vue native, puis cliquez sur **⟳ Actualiser**.
 
 **Un bloc a disparu.**
 Il est sans données et l'option « Masquer les blocs sans données » est active. Faites une sélection dans les listes.
 
-**L'action Configurer n'apparaît pas dans le menu.**
+**Le bouton Configurer n'apparaît pas.**
 Vous n'avez pas accès à la table `W_Admin` : seuls les administrateurs configurent les pages.
 
 **J'ai renommé une colonne ou une vue dans Grist.**
-Le panneau **Configurer** relit la structure à chaque ouverture : les nouveaux noms y apparaissent. Les colonnes déjà choisies dans les réglages suivent automatiquement leur renommage, pour les configurations enregistrées depuis la version 0.8.5. Pour l'affichage des pages, choisissez **☰ → Actualiser**.
+Le panneau **Configurer** relit la structure à chaque ouverture : les nouveaux noms y apparaissent. Les colonnes déjà choisies dans les réglages suivent automatiquement leur renommage, pour les configurations enregistrées depuis la version 0.8.5. Pour l'affichage des pages, cliquez sur **⟳ Actualiser**.
 
 **Les modifications du widget n'apparaissent pas après une mise à jour.**
 Rechargez la page avec **Ctrl + F5** pour vider le cache du navigateur.

@@ -7,7 +7,7 @@ Widget personnalisé [Grist](https://www.getgrist.com/) qui rassemble sur **une 
 
 Le widget ne duplique rien. Il **relit la configuration des vues Grist** (tables de métadonnées `_grist_*`) et en reproduit le rendu. Cela comprend les colonnes affichées, le tri, les filtres, les liaisons entre vues, la mise en forme conditionnelle et la disposition des fiches. Quand une vue change dans Grist, la page suit.
 
-**Version actuelle : 0.8.10** (en développement) · Développeur : **Ligures** — voir le [journal des modifications](CHANGELOG.md).
+**Version actuelle : 0.8.10.1** (en développement) · Développeur : **Ligures** — voir le [journal des modifications](CHANGELOG.md).
 Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), aussi accessible dans le widget par le bouton **Aide**.
 
 ---
@@ -106,7 +106,7 @@ Le widget est un **fichier HTML unique**, sans étape de construction.
    - *Ajouter un widget → Personnalisé*, sur n'importe quelle table ;
    - *URL personnalisée* : coller l'adresse ci-dessus ;
    - *Niveau d'accès* : **Accès complet au document**. Le widget doit lire les métadonnées des vues.
-3. **Choisir l'apparence** : à la première ouverture, un administrateur choisit le **style État (DSFR)**, réservé aux services de l'État, ou le **style neutre**, pour toute autre structure (voir [Apparence et DSFR](#apparence-et-dsfr)). Le choix se modifie ensuite dans la configuration, section Affichage.
+3. **Choisir l'apparence** : dans la configuration, section Affichage, un administrateur choisit le **style État (DSFR)**, réservé aux services de l'État, ou le **style neutre**, pour toute autre structure (voir [Apparence et DSFR](#apparence-et-dsfr)). Par défaut : style État.
 4. **Mettre à jour** : remplacer le fichier dans le dépôt, attendre la republication (1 à 2 minutes), puis recharger Grist avec **Ctrl+F5**. La version installée s'affiche en bas du panneau de configuration.
 
 **Organisation recommandée**
@@ -128,8 +128,8 @@ Le widget enregistre sa configuration **dans le document**. Elle survit donc aux
 
 | Table | Rôle | Création |
 |---|---|---|
-| `W_Composition` | Une ligne par configuration (`Nom`, `Config` en JSON). Contient aussi deux lignes réservées : `_Navigation` (menu commun) et `_Securite` (témoin de protection) | Automatique au premier enregistrement |
-| `W_Admin` | Détermine qui peut configurer : seules les personnes qui voient au moins une ligne de cette table ont accès aux boutons **Configurer** et **Disposition** | À créer (une ligne suffit) |
+| `W_Composition` | Une ligne par configuration (`Nom`, `Config` en JSON). Contient aussi la ligne réservée `_Navigation` (menu commun, apparence). Une ligne `_Securite` héritée des versions antérieures à 0.8.10 n'est plus utilisée | Automatique au premier enregistrement |
+| `W_Admin` | Détermine qui peut configurer : seules les personnes qui **lisent au moins une ligne** de cette table ont accès à **Configurer** et **Disposition** | Automatique au premier enregistrement (avec une ligne), ou à créer à la main |
 
 **Règles d'accès recommandées**
 - `W_Admin` : lecture réservée aux propriétaires, par exemple refuser la lecture si `user.Access != OWNER`.
@@ -137,7 +137,9 @@ Le widget enregistre sa configuration **dans le document**. Elle survit donc aux
 
 Masquer les boutons n'est qu'un confort. La vraie protection, ce sont ces règles d'accès.
 
-Sans table `W_Admin`, tout utilisateur peut configurer. C'est pratique pour une première mise en place, à corriger ensuite.
+**Fermé par défaut** (depuis 0.8.10) : si `W_Admin` est absente ou illisible, personne ne peut configurer, sauf dans un document qui n'a encore aucune configuration (installation). Le premier enregistrement crée alors `W_Admin` avec une ligne ; tant qu'aucune règle d'accès ne la protège, tous les éditeurs peuvent configurer. Pensez à poser la règle juste après l'installation.
+
+Pour vérifier : *Règles d'accès → Voir en tant que* un éditeur, puis ouvrir la page du widget : ni le bouton ⚙ Configurer ni l'action ☰ → Disposition ne doivent apparaître.
 
 La composition des pages (choix des vues, réglages des blocs, filtres rapides, menu) est décrite dans le [guide d'utilisation](GUIDE-UTILISATEUR.md#2-composer-une-page-administrateurs).
 
@@ -182,11 +184,17 @@ Un bloc carte reprend le widget carte de Grist : colonnes Nom / Latitude / Longi
 - **HTML des étiquettes de carte** : nettoyé par DOMPurify. La mise en forme est conservée ; scripts et gestionnaires d'événements sont retirés.
 - **Bibliothèques externes** : versions figées, vérifiées par empreinte d'intégrité (SRI). Un fichier altéré sur le CDN est refusé.
 - **Liens du menu** : seules les adresses `https://` sont acceptées.
-- **Données envoyées à des services tiers** :
-  - avec un zonage, les **codes INSEE** et, si le code manque, les **coordonnées d'un point** sont transmis à geo.api.gouv.fr ;
-  - avec les IRIS, des codes INSEE sont transmis au service de l'IGN ;
-  - le fond de carte est chargé depuis OpenStreetMap, ou le fournisseur réglé dans la carte Grist ;
-  - aucune autre donnée du document ne quitte le navigateur.
+- **Données envoyées à des services tiers (cartes)** : aucune valeur des tables (noms, effectifs, IPS, étiquettes…) ne quitte le navigateur. Seuls des codes géographiques, et parfois une position, partent vers des services publics :
+
+  | Service | Ce qui est envoyé | Quand |
+  |---|---|---|
+  | geo.api.gouv.fr (Etalab) | le **code du département** (22, 29…) | zonage par communes ou EPCI : contours de toutes les communes du département |
+  | geo.api.gouv.fr | les **coordonnées d'un point** (latitude, longitude) | seulement pour un point sans code INSEE, afin de trouver son département |
+  | data.geopf.fr (IGN) | des **codes INSEE de communes** | zonage IRIS : contours des IRIS de ces communes |
+  | Fond de carte (OpenStreetMap par défaut, ou le fournisseur réglé dans la carte Grist) | les numéros des tuiles affichées | toujours : le fournisseur voit la zone regardée, pas les points |
+  | Fichier QPV | rien | lu sur le même site que le widget |
+
+  Comme pour toute page web, chaque service voit aussi l'adresse IP de l'utilisateur et le site d'origine de la demande. Les bibliothèques (jsDelivr) sont téléchargées sans aucune donnée du document.
 - **Compte d'hébergement** : quiconque peut modifier le dépôt modifie le widget de tous les utilisateurs. Activez la double authentification et limitez les droits d'écriture.
 
 ---
@@ -214,7 +222,7 @@ Le widget est **inspiré** du Système de design de l'État (DSFR), sans en êtr
 - **Style État (DSFR)** : police Marianne, bleu France (`#000091`). Le DSFR et la police Marianne sont réservés aux services de l'État par leurs [conditions d'utilisation](https://www.systeme-de-design.gouv.fr/composants-et-modeles).
 - **Style neutre** : police du système, bleu neutre (`#1f4e8c`). À utiliser par toute autre structure (collectivité, association, entreprise…).
 
-Le choix est commun au document ; il est enregistré dans la ligne `_Navigation` de `W_Composition` (`nav.theme`). Sans choix enregistré, le widget s'affiche en style État et le propose à l'administrateur.
+Le choix est commun au document ; il est enregistré dans la ligne `_Navigation` de `W_Composition` (`nav.theme`). Sans choix enregistré, le widget s'affiche en style État.
 
 ---
 

@@ -9,20 +9,37 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 **Numérotation** : le widget est en développement, donc en version 0.
 - Le **dixième** (`0.X`) marque une évolution majeure.
 - Le chiffre suivant (`0.X.Y`) marque une évolution secondaire ou un ensemble de corrections. Il peut dépasser 9 : 0.8.9 est suivie de 0.8.10, puis 0.8.11…
+- Depuis 0.8.10, un quatrième chiffre (`0.X.Y.Z`) change à chaque livraison intermédiaire : 0.8.10.1, 0.8.10.2… jusqu'au passage à 0.8.11.0.
 - La version 1.0 sera la première version stable.
 
 Les versions antérieures à 0.5.0 ont été développées avant la mise en dépôt du code. Leur numérotation est reconstituée a posteriori, et leurs dates ne sont pas connues précisément (septembre – début octobre 2026).
 
 ---
 
-## [0.8.10] — Plein écran — 2026-10-12
+## [0.8.10.1] — Second filtre rapide, boutons directs, page d'accueil — 2026-10-14
+
+### Ajouté
+- **Second filtre rapide** par bloc (« 2ᵉ filtre rapide » et sa valeur à l'ouverture), sur un autre champ. Les deux filtres se cumulent ; chacun se synchronise par clic milieu avec les blocs filtrés sur le même champ.
+- **Page d'accueil** (menu de navigation, mode « Changer de page dans le widget ») : page du menu affichée à l'ouverture du widget.
+
+### Modifié
+- **Actualiser** (⟳) et **Configurer** (⚙, administrateurs) sortent du menu ☰ : boutons directs dans la barre, icône seule avec infobulle.
+- **Apparence** : la fenêtre de choix à la première ouverture est supprimée ; l'apparence se règle uniquement dans la configuration (section Affichage), par un administrateur. Par défaut : style État (DSFR).
+
+---
+
+## [0.8.10] — Plein écran, droit de configurer fermé par défaut — 2026-10-12
 
 ### Ajouté
 - **☰ → Plein écran** : ouvre la page Grist qui contient le widget dans un nouvel onglet, en mode page unique (sans les menus de Grist).
 - **Version du widget** dans l'infobulle du menu ☰ (avec la mention « nouvelle version » tant que les nouveautés n'ont pas été lues).
 
 ### Modifié
+- Documentation : tableau des données envoyées à des services externes par les cartes (README, « Sécurité et confidentialité ») et rappel dans le guide. Correction : pour les communes et EPCI, c'est le code du département, et non des codes INSEE, qui est envoyé à geo.api.gouv.fr.
 - L'option « Ouvrir les pages en mode page unique » n'est plus proposée avec « Changer de page dans le widget », où elle ne sert pas ; elle n'est plus appliquée aux liens dans ce mode.
+
+### Sécurité
+- **Droit de configurer fermé par défaut** : un éditeur qui ne voyait pas la table `W_Admin` pouvait quand même configurer, quand le témoin `_Securite` de `W_Composition` manquait ou lui était illisible (une table interdite était prise pour une table absente). Désormais, seul qui lit au moins une ligne de `W_Admin` peut configurer ; exception : un document encore sans configuration (installation), où `W_Admin` est créée automatiquement au premier enregistrement.
 
 ---
 
