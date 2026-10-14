@@ -43,7 +43,7 @@ En haut de la page, de gauche à droite et de haut en bas :
 - **Boutons directs**, à gauche du menu ☰ :
   - **⟳ Actualiser** : recharge les données et la configuration des vues ;
   - **⚙ Configurer** : réservé aux administrateurs (partie 2).
-- **Menu ☰** (en haut à droite) : il ouvre la liste des autres actions. Son infobulle indique la version du widget.
+- **Menu ☰** (en haut à droite, sur écran étroit) : il ouvre la liste des autres actions. Sur grand écran, il n'y a pas de menu : toutes les actions sont des icônes dans la barre, avec leur nom au survol. L'infobulle du menu et celle de l'Aide indiquent la version du widget.
 
   | Action | Rôle |
   |---|---|

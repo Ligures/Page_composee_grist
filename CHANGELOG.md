@@ -16,6 +16,14 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.10.2] — Actions en icônes sur grand écran — 2026-10-14
+
+### Modifié
+- **Grand écran** (plus de 900 px de large) : plus de menu ☰ ; toutes les actions (Actualiser, Configurer, Tout déplier, Plein écran, Imprimer, Disposition, Aide) sont des icônes dans la barre, avec leur libellé en infobulle. Sur écran étroit, le menu ☰ revient.
+- La version du widget figure aussi dans l'infobulle du bouton Aide.
+
+---
+
 ## [0.8.10.1] — Second filtre rapide, boutons directs, page d'accueil — 2026-10-14
 
 ### Ajouté

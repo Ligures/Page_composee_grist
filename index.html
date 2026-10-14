@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.10.1)              ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.10.2)              ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -421,6 +421,35 @@
       }
       .tbmenu .tb .lbl {
         display: inline !important; /* libellés toujours visibles dans le menu */
+      }
+      /* Écran large (0.8.10.2) : pas de menu ☰, toutes les actions en icônes dans la barre (libellé en infobulle).
+         Sur écran étroit, le menu ☰ revient. */
+      @media (min-width: 901px) {
+        #btnMenu {
+          display: none !important;
+        }
+        .bar .tbmenu,
+        .bar .tbmenu[hidden] {
+          display: contents;
+        }
+        .bar .tbmenu .tb {
+          border: 1px solid var(--bord);
+          width: auto;
+          height: 32px;
+          padding: 0 10px;
+          justify-content: center;
+          border-radius: 4px;
+        }
+        .bar .tbmenu .tb[hidden] {
+          display: none;
+        }
+        .bar .tbmenu .tb .lbl {
+          display: none !important;
+        }
+        .bar .tbmenu .tb .newdot {
+          position: absolute;
+          margin-left: 0;
+        }
       }
       #btnMenu[aria-expanded="true"] {
         background: var(--bleu);
@@ -2273,7 +2302,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.10.1"; // voir CHANGELOG.md
+      const VERSION = "0.8.10.2"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -6502,7 +6531,7 @@
         $("#btnMenu .newdot").hidden = !isNew; // visible aussi quand le menu est fermé
         $("#btnHelp").dataset.tip = isNew
           ? `Aide — nouvelle version ${VERSION} : voir les nouveautés`
-          : "Aide : guide d'utilisation et nouveautés";
+          : `Aide : guide d'utilisation et nouveautés — UX widget grist ${VERSION}`;
         // infobulle du menu ☰ : version du widget (et rappel d'une nouvelle version)
         $("#btnMenu").dataset.tip = `Menu : actions de la page — UX widget grist ${VERSION}${isNew ? " (nouvelle version)" : ""}`;
       }
