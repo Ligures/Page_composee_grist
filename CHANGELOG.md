@@ -16,6 +16,13 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.10.4] — Références vers des lignes protégées — 2026-10-14
+
+### Corrigé
+- **Références vers des lignes non lisibles** (règles d'accès par ligne, par exemple une circonscription d'un autre périmètre) : le widget affichait le numéro de ligne. Il affiche désormais le texte calculé par Grist (colonne d'affichage de la référence), comme les vues natives.
+
+---
+
 ## [0.8.10.3] — Guide d'administration séparé — 2026-10-14
 
 ### Modifié

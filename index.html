@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.10.3)              ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.10.4)              ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -2302,7 +2302,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.10.3"; // voir CHANGELOG.md
+      const VERSION = "0.8.10.4"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -2431,6 +2431,7 @@
             .then((t) => {
               const rows = toRows(t);
               S.byId[tableId] = new Map(rows.map((r) => [r.id, r]));
+              noteRefDisplays(tableId, rows);
               return rows;
             })
             .catch((e) => {
@@ -2439,6 +2440,30 @@
             });
         }
         return S.cache[tableId];
+      }
+
+      /* Texte des références vers des lignes que l'utilisateur ne peut pas lire (règles d'accès par ligne) :
+         Grist calcule pour chaque colonne Référence une colonne cachée « gristHelper_Display » dans la table qui
+         référence, lisible même quand la ligne visée ne l'est pas. On note ces textes par table visée et par id,
+         pour les afficher à la place du simple numéro de ligne (0.8.10.4). */
+      S.refDisp = {};
+      function noteRefDisplays(tableId, rows) {
+        const m = S.meta;
+        if (!m) return;
+        const tref = [...m.tables.values()].find((t) => t.tableId === tableId)?.id;
+        for (const c of m.colsByTable.get(tref) || []) {
+          const bt = baseType(c);
+          if ((bt !== "Ref" && bt !== "RefList") || !c.displayCol) continue;
+          const disp = m.cols.get(c.displayCol)?.colId;
+          if (!disp) continue;
+          const map = (S.refDisp[refTarget(c)] ||= new Map());
+          for (const r of rows) {
+            const v = r[c.colId],
+              d = r[disp];
+            if (bt === "Ref" && v && d != null && !isErr(d)) map.set(v, String(d));
+            else if (bt === "RefList" && isList(v) && isList(d)) v.slice(1).forEach((id, i) => d[i + 1] != null && map.set(id, String(d[i + 1])));
+          }
+        }
       }
 
       /* ---------- Métadonnées de mise en page ---------- */
@@ -2602,7 +2627,7 @@
       function refText(col, id, depth) {
         if (!id) return "";
         const row = S.byId[refTarget(col)]?.get(id);
-        if (!row) return String(id);
+        if (!row) return S.refDisp[refTarget(col)]?.get(id) ?? String(id); // ligne non lisible : texte calculé par Grist
         const vis = col.visibleCol ? S.meta.cols.get(col.visibleCol) : null;
         if (!vis) return `${refTarget(col)}[${id}]`;
         return depth > 2
