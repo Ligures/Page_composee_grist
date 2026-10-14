@@ -58,10 +58,10 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 
 **Filtre rapide**
 - **Ce qu'il fait** : il ne s'applique qu'à son bloc et ne change rien aux autres blocs ni aux sélections.
-- **Synchroniser** : un **clic milieu** (molette) ou **Maj+clic** sur une valeur l'applique à tous les blocs de la page filtrés sur le même champ (par exemple *Réseau*). Sur « Tous », tous ces blocs sont remis à « Tous ». Au-delà de 4 valeurs (liste déroulante), choisir la valeur puis faire un clic milieu sur la liste. L'infobulle de chaque valeur le rappelle. La comparaison porte sur le texte affiché, sans tenir compte des majuscules ni des accents. Si la valeur n'existe pas telle quelle dans un bloc, le rapprochement se fait par le début du texte : « Privé » garde « Privé sous contrat » et « Privé hors contrat » ; à l'inverse, « Privé sous contrat » garde « Privé ».
-- **Selon la largeur du bloc** :
-  - boutons côte à côte ;
-  - un seul bouton portant la valeur active (`Public ▾`), qui ouvre la liste des choix ;
+- **Synchroniser** : un **clic milieu** (molette) ou **Maj+clic** sur une valeur l'applique à tous les blocs de la page filtrés sur le même champ (par exemple *Réseau*). Sur « Tous », tous ces blocs sont remis à « Tous ». Dans une liste de valeurs, le clic milieu fonctionne de la même façon. L'infobulle de chaque valeur le rappelle. La comparaison porte sur le texte affiché, sans tenir compte des majuscules ni des accents. Si la valeur n'existe pas telle quelle dans un bloc, le rapprochement se fait par le début du texte : « Privé » garde « Privé sous contrat » et « Privé hors contrat » ; à l'inverse, « Privé sous contrat » garde « Privé ».
+- **Selon la largeur du bloc et le nombre de valeurs** :
+  - boutons côte à côte (4 valeurs au plus) ;
+  - un seul bouton portant la valeur active (`Public ▾`), qui ouvre la liste des choix : c'est toujours le cas au-delà de 4 valeurs ;
   - une icône d'entonnoir, pleine et bleue quand un filtre est actif.
 - **Rechargement** : la page revient à la valeur prévue par l'administrateur.
 - **Une seule valeur** : si toutes les lignes du bloc ont la même valeur (par exemple uniquement « Public »), le filtre n'est pas affiché, puisqu'il ne changerait rien.

@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.11.0)              ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.11.1)              ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -805,6 +805,8 @@
         position: fixed;
         z-index: 40;
         min-width: 110px;
+        max-height: min(60vh, 360px); /* longue liste : elle défile */
+        overflow-y: auto;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
       }
       .qf.open .qf-opts button {
@@ -1752,6 +1754,27 @@
       .cpage > label {
         margin: 0;
       }
+      .qfx {
+        margin: 2px 0 6px;
+      }
+      .qfx .qfx-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 12px;
+        max-height: 92px;
+        overflow: auto;
+        padding: 4px 6px;
+        border: 1px solid var(--bord);
+        border-radius: 4px;
+        margin-top: 2px;
+      }
+      .qfx .qfx-list label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        font-size: 12px;
+      }
       .cforms {
         margin-top: 8px;
       }
@@ -2307,7 +2330,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.11.0"; // voir CHANGELOG.md
+      const VERSION = "0.8.11.1"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -3047,7 +3070,8 @@
         for (const q of root.querySelectorAll(".bh .qf")) {
           const h2 = q.closest(".bh").querySelector("h2");
           const need = () => h2.clientWidth < Math.min(h2.scrollWidth, 140);
-          for (const mode of ["full", "compact", "icon"]) {
+          // beaucoup de valeurs : jamais de boutons côte à côte, mais la valeur active et sa liste (comme sur petit écran)
+          for (const mode of q.dataset.many ? ["compact", "icon"] : ["full", "compact", "icon"]) {
             q.classList.remove("full", "compact", "icon");
             q.classList.add(mode);
             if (!need()) break;
@@ -3077,6 +3101,9 @@
       // Deux filtres rapides par bloc (0.8.10.1) : emplacement k = 1 (qfField, qfDefault) ou 2 (qfField2, qfDefault2).
       const qfFieldOf = (b, k = 1) => (k === 2 ? b.qfField2 : b.qfField);
       const qfKey = (b, k = 1) => (k === 2 ? `${b.id}:2` : b.id); // clé du choix de l'utilisateur dans S.qf
+      // valeurs exclues par l'administrateur (0.8.11.1) : retirées des boutons ET des lignes affichées
+      const qfExclOf = (b, k = 1) => (k === 2 ? b.qfExclude2 : b.qfExclude) || [];
+      const qfExcluded = (b, k, text) => qfExclOf(b, k).some((x) => qfSame(x, text));
       function qfCol(b, info, k = 1) {
         const id = qfFieldOf(b, k);
         if (!id || !(QF_KINDS.includes(info.kind) || (info.kind === "single" && b.asList))) return null;
@@ -3130,7 +3157,15 @@
       }
       // qfApply — Ne garde que les lignes dont le champ vaut la valeur choisie pour ce bloc.
       function qfApply(b, info, rows) {
-        return qfApplyOne(b, info, qfApplyOne(b, info, rows, 1), 2); // les deux filtres se cumulent
+        return qfApplyOne(b, info, qfApplyOne(b, info, qfDropExcluded(b, info, rows), 1), 2); // les deux filtres se cumulent
+      }
+      // qfDropExcluded — Retire les lignes dont un champ de filtre rapide vaut une valeur exclue.
+      function qfDropExcluded(b, info, rows) {
+        for (const k of [1, 2]) {
+          const col = qfCol(b, info, k);
+          if (col && qfExclOf(b, k).length) rows = rows.filter((r) => !qfExcluded(b, k, qfText(col, r)));
+        }
+        return rows;
       }
       function qfApplyOne(b, info, rows, k) {
         const col = qfCol(b, info, k),
@@ -3155,7 +3190,7 @@
           .toLowerCase()
           .replace(/\s+/g, " ")
           .trim();
-      // qfHtml — Sélecteur de l'en-tête : boutons « Tous | valeurs » (liste déroulante au-delà de 4 valeurs).
+      // qfHtml — Sélecteurs de l'en-tête : boutons « Tous | valeurs » ; au-delà de 4 valeurs, valeur active et liste au clic.
       function qfHtml(b, info, allRows) {
         return qfHtmlOne(b, info, allRows, 1) + qfHtmlOne(b, info, allRows, 2);
       }
@@ -3163,7 +3198,7 @@
         const col = qfCol(b, info, k);
         if (!col) return "";
         const cur = qfCur(b, k);
-        const vals = [...new Set(allRows.map((r) => qfText(col, r)))].sort(COLL.compare);
+        const vals = [...new Set(qfDropExcluded(b, info, allRows).map((r) => qfText(col, r)))].sort(COLL.compare);
         // valeur synchronisée absente de ce bloc (« Privé » alors que le bloc a « Privé sous contrat »…) :
         // pas de bouton supplémentaire ; les valeurs rapprochées sont surlignées (voir qfApply)
         const exact = !cur || vals.some((x) => qfSame(x, cur));
@@ -3177,15 +3212,12 @@
         // aide au survol de chaque valeur : clic sur ce bloc, clic milieu (ou Maj+clic) sur tous les blocs
         const sync = `\nClic milieu (ou Maj+clic) : appliquer à tous les blocs de la page filtrés sur « ${name} »`;
         const pr = cur ? `<span class="qf-print">${esc(name)} : ${esc(vals.find((x) => qfSame(x, cur)) || cur)}</span>` : ""; // impression
-        if (vals.length > 4)
-          return `${pr}<select class="qfs" data-qfs="${b.id}" data-qk="${k}" title="${esc(tip + "\nClic milieu sur la liste : appliquer la valeur choisie à tous les blocs de la page filtrés sur « " + name + " »")}"><option value="">${esc(col.label || col.colId)} : tous</option>${
-            exact ? "" : `<option value="${esc(cur)}" selected>${esc(cur)} (${vals.filter(isOn).length} valeurs)</option>`
-          }${vals.map((v) => `<option value="${esc(v)}" ${cur && exact && qfSame(v, cur) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`;
         // trois présentations, choisies par fitQf() selon la place dans l'en-tête :
         //   « full » boutons côte à côte · « compact » seule l'option active, les autres en liste au clic
         //   · « icon » icône de filtre (pastille si un filtre est actif), liste au clic
         const label = cur ? vals.find((x) => qfSame(x, cur)) || cur : "Tous"; // valeur rapprochée : son propre texte
-        return `${pr}<span class="qf full${cur ? " active" : ""}" title="${esc(tip)}">
+        const many = vals.length > 4; // au-delà de 4 valeurs : valeur active + liste au clic, comme sur petit écran
+        return `${pr}<span class="qf ${many ? "compact" : "full"}${cur ? " active" : ""}"${many ? ' data-many="1"' : ""} title="${esc(tip)}">
           <button type="button" class="qf-cur" data-qftog="${b.id}" data-qk="${k}" aria-haspopup="true" aria-label="${esc(tip)} : ${esc(label)}">${QF_ICON}<span class="qf-lab">${esc(label)}</span><span class="qf-caret">▾</span></button>
           <span class="qf-opts">${[["", "Tous"], ...vals.map((v) => [v, v])]
             .map(([v, l]) => `<button type="button" data-qf="${b.id}" data-qk="${k}" data-qv="${esc(v)}" class="${(v ? cur && isOn(v) : !cur) ? "on" : ""}" title="${esc(`Clic : ${v ? `n'afficher que « ${l} »` : "tout afficher"} dans ce bloc${sync}`)}">${esc(l)}</button>`)
@@ -7131,13 +7163,17 @@
               field,
               k === 2
                 ? "Second filtre dans l'en-tête du bloc, sur un autre champ. Il se cumule avec le premier (par exemple Réseau = Public et Type = Ecole)."
-                : "Ajoute dans l'en-tête du bloc des boutons « Tous | valeur 1 | valeur 2… » (liste déroulante au-delà de 4 valeurs) pour filtrer ses lignes sur ce champ. Exemple : Reseau → Tous | Public | Privé.",
+                : "Ajoute dans l'en-tête du bloc des boutons « Tous | valeur 1 | valeur 2… » (au-delà de 4 valeurs : la valeur active et une liste au clic) pour filtrer ses lignes sur ce champ. Exemple : Reseau → Tous | Public | Privé.",
             );
             const qc = b[fk] && all.find((c) => c.colId === b[fk]);
             if (qc) {
               const vals = qfValuesOf([qc]);
               if (b[dk] && !vals.some((v) => qfSame(v, b[dk]))) vals.push(b[dk]);
               out += L(k === 2 ? "2ᵉ filtre à l'ouverture" : "Filtre à l'ouverture", `<select data-f="${dk}" data-i="${i}"><option value="">Tous</option>${vals.map((v) => `<option value="${esc(v)}" ${b[dk] && qfSame(v, b[dk]) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`, `Valeur de « ${qc.label || qc.colId} » sélectionnée à l'ouverture de la page. L'utilisateur peut ensuite changer.`);
+              const ex = qfExclOf(b, k);
+              out += `<div class="qfx" title="Valeurs retirées des boutons du filtre ET des lignes affichées dans ce bloc (par exemple « Fermé »)."><span class="lt">${k === 2 ? "2ᵉ filtre : valeurs exclues" : "Valeurs exclues"}</span><span class="qfx-list">${[...new Set([...vals, ...ex])]
+                .map((v) => `<label><input type="checkbox" data-qfx="${i}" data-qk="${k}" value="${esc(v)}" ${ex.some((x) => qfSame(x, v)) ? "checked" : ""}> ${esc(v)}</label>`)
+                .join("")}</span></div>`;
             }
           }
           return out;
@@ -7453,6 +7489,16 @@
         }
         if (t.dataset.f === "qfField") draft.blocks[Number(t.dataset.i)].qfDefault = ""; // nouveau champ : valeur à revoir
         if (t.dataset.f === "qfField2") draft.blocks[Number(t.dataset.i)].qfDefault2 = "";
+        if (t.dataset.f === "qfField") draft.blocks[Number(t.dataset.i)].qfExclude = [];
+        if (t.dataset.f === "qfField2") draft.blocks[Number(t.dataset.i)].qfExclude2 = [];
+        if (t.dataset.qfx) {
+          const b = draft.blocks[Number(t.dataset.qfx)],
+            key = Number(t.dataset.qk) === 2 ? "qfExclude2" : "qfExclude";
+          const list = (b[key] || []).filter((x) => !qfSame(x, t.value));
+          if (t.checked) list.push(t.value);
+          b[key] = list;
+          return;
+        }
         if (t.dataset.f === "mapZone") draft.blocks[Number(t.dataset.i)].mapCommunes = false; // ancienne option remplacée par « Zonage »
         if (t.dataset.f) {
           const b = draft.blocks[Number(t.dataset.i)];

@@ -16,6 +16,16 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.11.1] — Valeurs exclues des filtres rapides, présentation homogène — 2026-10-14
+
+### Ajouté
+- **Valeurs exclues** pour chaque filtre rapide (réglages du bloc) : les valeurs cochées sont retirées des boutons du filtre et des lignes affichées dans le bloc, y compris sur « Tous ».
+
+### Modifié
+- **Présentation des filtres rapides** : au-delà de 4 valeurs, plus de liste déroulante du navigateur, mais le même affichage que sur écran réduit (valeur active, liste au clic, qui défile si elle est longue). Les deux filtres d'un bloc ont ainsi la même présentation ; le clic milieu fonctionne de la même façon.
+
+---
+
 ## [0.8.11.0] — Cadrage des cartes — 2026-10-14
 
 ### Ajouté

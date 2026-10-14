@@ -81,6 +81,7 @@ Pour ajouter les boutons `Tous | Public | Privé` à un bloc :
    - Un champ non affiché peut donc servir de filtre.
 2. **Filtre à l'ouverture** : *Tous*, ou la valeur à présélectionner.
 3. Facultatif : **2ᵉ filtre rapide** sur un autre champ (par exemple *Type*), avec sa propre valeur à l'ouverture. Les deux filtres se cumulent : *Public* et *Ecole*.
+4. Facultatif : **Valeurs exclues** (pour chaque filtre) : cocher les valeurs à retirer. Elles disparaissent des boutons du filtre **et** des lignes du bloc, même sur « Tous » (par exemple un établissement « Fermé »).
 
 Le filtre est disponible pour les tableaux, les listes de fiches, les graphiques et les cartes.
 
