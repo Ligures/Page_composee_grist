@@ -16,6 +16,13 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.11.2] — Seconde couleur des points — 2026-10-14
+
+### Ajouté
+- **Cartes, « … sinon selon »** : une 2ᵉ colonne de couleur pour les points dont la colonne « Couleur selon » est vide. Elle ne remplace pas la première : les autres points gardent leur couleur. Teintes différentes de la 1re colonne et légende à part (« … (si … vide) »).
+
+---
+
 ## [0.8.11.1] — Valeurs exclues des filtres rapides, présentation homogène — 2026-10-14
 
 ### Ajouté

@@ -102,6 +102,7 @@ Pour une vue affichée en **Liste de sélection** :
 |---|---|
 | Étiquette | Colonne affichée au survol (par défaut celle de la carte Grist) |
 | Couleur selon | Couleur des points selon une colonne |
+| … sinon selon | Pour les points dont la colonne « Couleur selon » est vide : couleur selon une 2ᵉ colonne (teintes différentes, légende à part). Les autres points gardent leur couleur |
 | Contour selon | Cercle autour des points : selon une colonne, avec jusqu'à 3 couleurs et conditions (`=`, `≠`, `<`, `≤`, `>`, `≥`, `contient`), ou **situation QPV (calculée)** |
 | Quartiers prioritaires (QPV) | Affiche les périmètres des QPV |
 | Proximité d'un QPV | Distance retenue pour « à proximité » (0 à 500 m) |
