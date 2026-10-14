@@ -16,6 +16,11 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.9.0.4] — Impression des tableaux longs — 2026-10-14
+
+### Corrigé
+- **Impression des tableaux longs** : les blocs qui contiennent un tableau ou des fiches peuvent désormais se couper d'une page à l'autre. Avant, un bloc plus haut qu'une page était repoussé à la page suivante, ce qui laissait des pages blanches et des coupures inutiles. Les lignes d'un tableau ne sont jamais coupées en deux et l'en-tête est répété sur chaque page.
+
 ## [0.9.0.3] — Impression fidèle à l'écran — 2026-10-14
 
 ### Modifié

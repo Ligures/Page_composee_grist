@@ -1,4 +1,4 @@
-/* UX widget grist — feuilles de style (version 0.9.0.3).
+/* UX widget grist — feuilles de style (version 0.9.0.4).
    Mise en page (grille de 6 colonnes), blocs, tableaux, fiches, cartes, panneau de configuration, impression.
    Chargée par index.html ; ne contient aucune donnée. */
 @font-face {
@@ -2124,7 +2124,11 @@ html.printing #grid {
   .block.collapsed > .bb {
     display: block !important;
   }
-  .block.printbig {
+  /* les blocs longs (tableaux, fiches) peuvent se couper entre deux pages :
+     sinon un grand tableau est repoussé page suivante et laisse des pages blanches */
+  .block.printbig,
+  .block:has(.tbl-wrap),
+  .block:has(.cartes) {
     break-inside: auto;
   }
   .tbl-wrap,

@@ -64,6 +64,7 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
   - un seul bouton portant la valeur active (`Public ▾`), qui ouvre la liste des choix : c'est toujours le cas au-delà de 4 valeurs ;
   - une icône d'entonnoir, pleine et bleue quand un filtre est actif.
 - **Rechargement** : la page revient à la valeur prévue par l'administrateur.
+- **(SO)** (sans objet) : dans le premier filtre, cette option affiche les lignes sans valeur.
 - **Une seule valeur** : si toutes les lignes du bloc ont la même valeur (par exemple uniquement « Public »), le filtre n'est pas affiché, puisqu'il ne changerait rien.
 
 **Page vide** : le message « Aucune donnée, pas d'élément sélectionné » signifie qu'il faut d'abord faire un choix dans les listes de sélection.
@@ -94,7 +95,7 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 
 ### Imprimer et exporter
 
-- **Imprimer** : tous les blocs sont dépliés le temps de l'impression. Le titre de la page et les sélections en cours figurent en tête. Pour un PDF, choisir « Enregistrer au format PDF » dans la fenêtre d'impression. Les boutons de filtre rapide ne sont pas imprimés ; un filtre actif est rappelé en texte à côté du titre du bloc (par exemple « Réseau : Privé »).
+- **Imprimer** : la page s'imprime en A4 paysage, avec la même disposition qu'à l'écran. Tous les blocs sont dépliés le temps de l'impression. Le titre de la page et les sélections en cours figurent en tête. Pour un PDF, choisir « Enregistrer au format PDF » dans la fenêtre d'impression. Les boutons de filtre rapide ne sont pas imprimés ; un filtre actif est rappelé en texte à côté du titre du bloc (par exemple « Réseau : Privé »).
 - **Exporter des données** : utiliser l'export de Grist (menu de la vue native, *Télécharger en CSV / XLSX*).
 
 ### Sur smartphone
