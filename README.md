@@ -7,7 +7,7 @@ Widget personnalisé [Grist](https://www.getgrist.com/) qui rassemble sur **une 
 
 Le widget ne duplique rien. Il **relit la configuration des vues Grist** (tables de métadonnées `_grist_*`) et en reproduit le rendu. Cela comprend les colonnes affichées, le tri, les filtres, les liaisons entre vues, la mise en forme conditionnelle et la disposition des fiches. Quand une vue change dans Grist, la page suit.
 
-**Version actuelle : 0.8.11.6** (en développement) · Développeur : **Ligures** — voir le [journal des modifications](CHANGELOG.md).
+**Version actuelle : 0.9.0.1** (en développement) · Développeur : **Ligures** — voir le [journal des modifications](CHANGELOG.md).
 Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), aussi accessible dans le widget par le bouton **Aide**.
 
 ---
@@ -81,7 +81,9 @@ Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), 
 
 | Fichier | Rôle |
 |---|---|
-| `index.html` | Le widget (fichier unique : HTML, CSS, JavaScript), servi par défaut par GitHub Pages |
+| `index.html` | La page du widget (structure HTML), servie par défaut par GitHub Pages |
+| `ux-widget.js` | Le script du widget |
+| `ux-widget.css` | Les styles du widget |
 | `qpv-bretagne.geojson` | Périmètres des quartiers prioritaires 2024 (22, 29, 35, 56), facultatif |
 | `aia.png` | Icône AIA (« assisté par l'IA ») de Martine Peters, affichée dans l'aide |
 | `README.md` | Ce document : installation et fonctionnement technique (onglet « À propos » de l'aide) |
@@ -96,9 +98,9 @@ Les quatre fichiers Markdown sont lus par le widget : ils doivent rester à côt
 
 ## Installation
 
-Le widget est un **fichier HTML unique**, sans étape de construction.
+Le widget tient en **trois fichiers** (`index.html`, `ux-widget.js`, `ux-widget.css`), sans étape de construction.
 
-1. **Héberger les fichiers** : déposer `index.html` et `qpv-bretagne.geojson` dans un dépôt GitHub (par exemple `ux-widget-grist`), puis activer **GitHub Pages** (*Settings → Pages → Deploy from a branch → main / root*).
+1. **Héberger les fichiers** : déposer `index.html`, `ux-widget.js`, `ux-widget.css`, `qpv-bretagne.geojson`, les fichiers Markdown et `aia.png` dans un dépôt GitHub (par exemple `ux-widget-grist`), puis activer **GitHub Pages** (*Settings → Pages → Deploy from a branch → main / root*).
    Adresse obtenue :
    ```
    https://<compte>.github.io/<dépôt>/
@@ -108,7 +110,7 @@ Le widget est un **fichier HTML unique**, sans étape de construction.
    - *URL personnalisée* : coller l'adresse ci-dessus ;
    - *Niveau d'accès* : **Accès complet au document**. Le widget doit lire les métadonnées des vues.
 3. **Choisir l'apparence** : dans la configuration, section Affichage, un administrateur choisit le **style État (DSFR)**, réservé aux services de l'État, ou le **style neutre**, pour toute autre structure (voir [Apparence et DSFR](#apparence-et-dsfr)). Par défaut : style État.
-4. **Mettre à jour** : remplacer le fichier dans le dépôt, attendre la republication (1 à 2 minutes), puis recharger Grist avec **Ctrl+F5**. La version installée s'affiche en bas du panneau de configuration.
+4. **Mettre à jour** : remplacer les fichiers modifiés dans le dépôt (en général `index.html`, `ux-widget.js` et `ux-widget.css` ensemble, car `index.html` porte le numéro de version des deux autres), attendre la republication (1 à 2 minutes), puis recharger Grist avec **Ctrl+F5**. La version installée s'affiche en bas du panneau de configuration.
 
 **Organisation recommandée**
 - Garder les vues natives sur des pages « support », éventuellement masquées aux utilisateurs.
@@ -183,6 +185,7 @@ Un bloc carte reprend le widget carte de Grist : colonnes Nom / Latitude / Longi
 - **Droits** : le widget passe par l'API de Grist et ne contourne aucune règle d'accès. Les lecteurs ne peuvent rien modifier.
 - **Affichage des données** : toutes les valeurs insérées dans la page sont échappées.
 - **HTML des étiquettes de carte** : nettoyé par DOMPurify. La mise en forme est conservée ; scripts et gestionnaires d'événements sont retirés.
+- **Politique de sécurité (CSP)** : la page n'accepte que ses propres scripts (`ux-widget.js`) et ceux de Grist et de jsDelivr ; tout script en ligne, ou injecté dans une valeur, est refusé par le navigateur. Les connexions sont limitées au site du widget, à jsDelivr et aux services géographiques publics (geo.api.gouv.fr, data.geopf.fr). `unsafe-eval` reste autorisé pour Plotly (graphiques avancés).
 - **Bibliothèques externes** : versions figées, vérifiées par empreinte d'intégrité (SRI). Un fichier altéré sur le CDN est refusé.
 - **Liens du menu** : seules les adresses `https://` sont acceptées.
 - **Données envoyées à des services tiers (cartes)** : aucune valeur des tables (noms, effectifs, IPS, étiquettes…) ne quitte le navigateur. Seuls des codes géographiques, et parfois une position, partent vers des services publics :
@@ -229,12 +232,13 @@ Le choix est commun au document ; il est enregistré dans la ligne `_Navigation`
 
 ## Structure du code
 
-Le fichier est commenté. Un **sommaire** en tête du script décrit les parties, le cycle de vie, le stockage et le schéma de configuration. Chaque fonction est précédée d'une ligne d'explication.
+Les trois fichiers sont commentés. Un **sommaire** en tête de `ux-widget.js` décrit les parties, le cycle de vie, le stockage et le schéma de configuration. Chaque fonction est précédée d'une ligne d'explication.
 
 ```
-<style>    grille, blocs, tableaux, fiches, filtres rapides, cartes, panneau de configuration, impression
-<body>     en-tête (menu, barre d'outils, listes de sélection), grille, panneau
-<script>
+index.html      en-tête (menu, barre d'outils, listes de sélection), grille, panneau, aide ;
+                politique de sécurité (CSP) ; charge ux-widget.css et ux-widget.js
+ux-widget.css   grille, blocs, tableaux, fiches, filtres rapides, cartes, panneau de configuration, impression
+ux-widget.js
   État (objet S), VERSION et utilitaires
   Métadonnées      loadMeta, getInfo           lecture des vues Grist
   Données          rowsFor, selectedRowId      filtres, tri, liaisons
@@ -255,7 +259,9 @@ Le fichier est commenté. Un **sommaire** en tête du script décrit les parties
 - Toute valeur issue des données ou de la configuration passe par `esc()` avant d'être insérée en HTML.
 - Une nouvelle bibliothèque est ajoutée à `LIBS`, avec sa version figée et son empreinte SRI.
 - Une nouvelle option de bloc est déclarée dans `renderConfig()`, avec une explication au survol.
-- Chaque version incrémente `VERSION` et ajoute une entrée au `CHANGELOG.md`. Les utilisateurs voient alors la pastille « nouvelle version » sur le bouton Aide.
+- Aucun script ni attribut `on…=` dans la page : la CSP les refuse. Les événements se branchent dans `ux-widget.js` (`addEventListener`).
+- Une nouvelle adresse externe (service, CDN) doit être ajoutée à la CSP de `index.html`.
+- Chaque version incrémente `VERSION` (dans `ux-widget.js`), le numéro `?v=…` des deux liens de `index.html` (pour vider le cache des navigateurs), et ajoute une entrée au `CHANGELOG.md`. Les utilisateurs voient alors la pastille « nouvelle version » sur le bouton Aide.
 
 **Diagnostic** : la console du navigateur affiche une ligne `[UX widget] page « … » calculée en … ms`. Elle donne le nombre de blocs affichés, masqués ou non pris en charge, et la raison pour chaque bloc vide.
 

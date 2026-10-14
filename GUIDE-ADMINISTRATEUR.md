@@ -107,7 +107,7 @@ Les réglages d'une carte sont regroupés en quatre encadrés.
 | Étiquette | Colonne affichée au survol (par défaut celle de la carte Grist) |
 | Étiquettes toujours visibles | Affiche toutes les étiquettes en permanence |
 | Couleur selon | Couleur des points selon une colonne |
-| … sinon selon | Pour les points dont la colonne « Couleur selon » est vide : couleur selon une 2ᵉ colonne (teintes différentes, légende à part). Les autres points gardent leur couleur |
+| … sinon selon | Pour les points dont la colonne « Couleur selon » est vide : couleur selon une 2ᵉ colonne (teintes différentes, légende à part, sous le nom de la colonne). Les autres points gardent leur couleur |
 
 **Contour des points**
 

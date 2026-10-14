@@ -16,6 +16,26 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.9.0.1] — Légende de la seconde couleur allégée — 2026-10-14
+
+### Modifié
+- Cartes : la légende de la 2ᵉ colonne de couleur n'affiche plus la mention « (si … vide) ».
+
+---
+
+## [0.9.0] — Code séparé et politique de sécurité stricte — 2026-10-14
+
+Évolution majeure de la structure du widget, sans changement visible pour les utilisateurs.
+
+### Modifié
+- **Trois fichiers au lieu d'un** : `index.html` (structure de la page), `ux-widget.css` (styles) et `ux-widget.js` (script). Ils sont à déposer ensemble dans le dépôt ; `index.html` charge les deux autres avec le numéro de version (`?v=0.9.0`), pour que les navigateurs ne gardent pas une ancienne version en cache.
+
+### Sécurité
+- **Politique de sécurité du contenu (CSP)** dans `index.html` : aucun script en ligne n'est exécuté (un script injecté dans une donnée ou une étiquette serait refusé par le navigateur) ; scripts limités au site du widget, à Grist et à jsDelivr ; connexions limitées au site du widget, à jsDelivr, à geo.api.gouv.fr et à data.geopf.fr ; aucun envoi de formulaire ; pas d'objets intégrés.
+- L'attribut `onerror` de l'icône AIA, incompatible avec cette politique, est remplacé par un traitement dans le script.
+
+---
+
 ## [0.8.11.6] — Filtres rapides affichés sur un bloc sans données — 2026-10-14
 
 ### Modifié
