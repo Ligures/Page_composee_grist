@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.10.2)              ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.10.3)              ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -10,7 +10,7 @@
 
   Développeur : Ligures.
   Fichier unique : HTML + CSS + JavaScript, sans étape de construction.
-  Historique des versions : CHANGELOG.md · Guide d'utilisation : GUIDE-UTILISATEUR.md
+  Historique des versions : CHANGELOG.md · Guides : GUIDE-UTILISATEUR.md, GUIDE-ADMINISTRATEUR.md
   Hébergement : GitHub Pages, à côté de qpv-bretagne.geojson (couche QPV).
   Accès requis dans Grist : « Accès complet au document ».
 
@@ -2302,7 +2302,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.10.2"; // voir CHANGELOG.md
+      const VERSION = "0.8.10.3"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -6501,6 +6501,7 @@
          Mise en forme : marked ; HTML nettoyé par DOMPurify. Une pastille signale une nouvelle version. */
       const HELP_DOCS = [
         { id: "guide", label: "Guide", file: "GUIDE-UTILISATEUR.md" },
+        { id: "admin", label: "Administration", file: "GUIDE-ADMINISTRATEUR.md", admin: true }, // composer les pages
         { id: "news", label: "Nouveautés", file: "CHANGELOG.md" },
         { id: "about", label: "À propos", file: "README.md", admin: true }, // documentation technique : administrateurs
       ];

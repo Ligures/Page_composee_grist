@@ -7,7 +7,7 @@ Widget personnalisé [Grist](https://www.getgrist.com/) qui rassemble sur **une 
 
 Le widget ne duplique rien. Il **relit la configuration des vues Grist** (tables de métadonnées `_grist_*`) et en reproduit le rendu. Cela comprend les colonnes affichées, le tri, les filtres, les liaisons entre vues, la mise en forme conditionnelle et la disposition des fiches. Quand une vue change dans Grist, la page suit.
 
-**Version actuelle : 0.8.10.2** (en développement) · Développeur : **Ligures** — voir le [journal des modifications](CHANGELOG.md).
+**Version actuelle : 0.8.10.3** (en développement) · Développeur : **Ligures** — voir le [journal des modifications](CHANGELOG.md).
 Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), aussi accessible dans le widget par le bouton **Aide**.
 
 ---
@@ -85,11 +85,12 @@ Pour l'usage au quotidien, voir le [guide d'utilisation](GUIDE-UTILISATEUR.md), 
 | `qpv-bretagne.geojson` | Périmètres des quartiers prioritaires 2024 (22, 29, 35, 56), facultatif |
 | `aia.png` | Icône AIA (« assisté par l'IA ») de Martine Peters, affichée dans l'aide |
 | `README.md` | Ce document : installation et fonctionnement technique (onglet « À propos » de l'aide) |
-| `GUIDE-UTILISATEUR.md` | Guide pour les utilisateurs et les administrateurs (onglet « Guide ») |
+| `GUIDE-UTILISATEUR.md` | Guide des utilisateurs (onglet « Guide ») |
+| `GUIDE-ADMINISTRATEUR.md` | Guide des administrateurs : composer les pages (onglet « Administration », visible des seuls administrateurs) |
 | `CHANGELOG.md` | Journal des modifications (onglet « Nouveautés ») |
 | `LICENSE` | Licence MIT du code, et ce qu'elle ne couvre pas |
 
-Les trois fichiers Markdown sont lus par le widget : ils doivent rester à côté de `index.html`, avec ces noms.
+Les quatre fichiers Markdown sont lus par le widget : ils doivent rester à côté de `index.html`, avec ces noms.
 
 ---
 
@@ -141,7 +142,7 @@ Masquer les boutons n'est qu'un confort. La vraie protection, ce sont ces règle
 
 Pour vérifier : *Règles d'accès → Voir en tant que* un éditeur, puis ouvrir la page du widget : ni le bouton ⚙ Configurer ni l'action ☰ → Disposition ne doivent apparaître.
 
-La composition des pages (choix des vues, réglages des blocs, filtres rapides, menu) est décrite dans le [guide d'utilisation](GUIDE-UTILISATEUR.md#2-composer-une-page-administrateurs).
+La composition des pages (choix des vues, réglages des blocs, filtres rapides, menu) est décrite dans le [guide d'administration](GUIDE-ADMINISTRATEUR.md).
 
 ---
 

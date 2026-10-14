@@ -16,6 +16,13 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.10.3] — Guide d'administration séparé — 2026-10-14
+
+### Modifié
+- **Aide** : le guide est scindé en deux. `GUIDE-UTILISATEUR.md` (onglet « Guide ») pour les utilisateurs ; `GUIDE-ADMINISTRATEUR.md` (nouvel onglet « Administration ») pour composer les pages, affiché aux seuls administrateurs. Chacun a ses propres questions fréquentes (nouvelles entrées : onglets absents, éditeur qui voit Configurer).
+
+---
+
 ## [0.8.10.2] — Actions en icônes sur grand écran — 2026-10-14
 
 ### Modifié

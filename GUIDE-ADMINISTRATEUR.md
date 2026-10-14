@@ -1,0 +1,163 @@
+# Guide d'administration — UX widget grist
+
+<img src="aia.png" alt="AIA" width="40" align="left" /> **AIA — Assisté par l'intelligence artificielle.** Ce widget et sa documentation ont été réalisés avec l'assistance d'une IA, sous la direction et avec la validation de leur auteur. Icône : [Martine Peters](https://mpeters.uqo.ca/utilisation-transparente-de-lintelligence-artificielle/), CC BY-NC-SA 4.0.
+<br clear="left" />
+
+Ce guide s'adresse aux **administrateurs**, qui composent les pages. Il n'est affiché dans l'aide qu'aux personnes qui peuvent configurer le widget. Pour l'utilisation courante, voir l'onglet **Guide** ; pour l'installation et le fonctionnement technique, l'onglet **À propos** (README).
+
+---
+
+## Sommaire
+
+1. [Composer une page](#1-composer-une-page)
+   - [Ouvrir la configuration](#ouvrir-la-configuration)
+   - [Choisir et régler les vues](#choisir-et-régler-les-vues)
+   - [Disposition](#disposition)
+   - [Filtre rapide](#filtre-rapide)
+   - [Listes de sélection](#listes-de-sélection)
+   - [Cartes : réglages](#cartes--réglages)
+   - [Menu de navigation](#menu-de-navigation)
+   - [Apparence](#apparence)
+   - [Enregistrer](#enregistrer)
+2. [Questions fréquentes](#2-questions-fréquentes)
+
+---
+
+## 1. Composer une page
+
+Le bouton **⚙ Configurer** et l'action **Disposition** n'apparaissent qu'aux administrateurs : les personnes qui lisent au moins une ligne de la table `W_Admin`.
+
+### Ouvrir la configuration
+
+Le bouton **⚙ Configurer** ouvre un panneau sur la moitié droite de l'écran :
+- l'**aperçu de la disposition** reste affiché en haut ;
+- chaque option est expliquée au **survol** de son libellé (soulignement en pointillés) ;
+- rien n'est appliqué avant **Enregistrer**, et **Annuler** ferme le panneau sans rien changer.
+
+**Général**
+- **Page réglée** : la page dont on règle la composition. Par défaut, c'est la page affichée (marquée « — affichée »). On peut en choisir une autre : l'affichage du widget ne change pas.
+- **＋ Nouvelle page** : crée une page vide, sans toucher à la page affichée. **Dupliquer** crée une nouvelle page à partir de celle en cours de réglage (mêmes blocs, mêmes réglages).
+- Quand la page réglée n'est pas la page affichée, un encadré jaune le signale. L'enregistrement range alors la page dans `W_Composition` sans changer l'affichage. Deux options :
+  - **L'afficher dans ce widget après l'enregistrement** : le widget affichera désormais cette page ;
+  - **L'ajouter au menu de navigation** (mode « Changer de page dans le widget ») : un lien vers la page est ajouté au menu commun.
+- **Nom de la page** : identifie la page dans `W_Composition`. Si le nom existe déjà, le widget demande confirmation avant de remplacer l'autre page. Un nom ne peut pas commencer par « _ » (réservé).
+- **Liens vers des formulaires Grist** (facultatif) : « + Ajouter un lien vers un formulaire », puis un libellé (ex. « Signaler un problème »), un commentaire au survol facultatif (affiché dans une infobulle sur le bouton) et l'adresse du formulaire. Pour obtenir l'adresse : dans Grist, ouvrir la vue Formulaire, cliquer sur « Publier », puis « Partager » et copier le lien. Chaque lien devient un bouton dans l'en-tête de la page, à gauche du menu ☰. Le formulaire s'ouvre dans une fenêtre au-dessus de la page, ou dans un nouvel onglet si la case « nouvel onglet » est cochée. La fenêtre se ferme avec ✕, Échap ou un clic à côté, et toute seule après l'envoi du formulaire ; la page est alors rechargée pour montrer la nouvelle réponse. La fermeture automatique fonctionne si l'utilisateur peut lire la table du formulaire ; sinon, réglez dans Grist une redirection après l'envoi (n'importe quelle adresse). Le bouton ↗ de la fenêtre ouvre le formulaire dans un nouvel onglet. Seules les adresses en https sont acceptées.
+- **Titre affiché** : laissé vide, il libère de la place en haut de page.
+
+### Choisir et régler les vues
+
+1. **Vues disponibles** : choisir une page Grist, puis cocher ses vues. On peut combiner des vues de plusieurs pages.
+2. **Vues retenues** : chaque vue cochée devient un bloc.
+   - Les flèches ↑ ↓ règlent l'ordre ; ✕ retire le bloc (la vue Grist n'est pas supprimée).
+   - Chaque bloc a ses réglages :
+
+| Réglage | Effet |
+|---|---|
+| Largeur, Colonne, Hauteur (lignes) | Place du bloc dans la grille de 6 colonnes |
+| Taille | Hauteur maximale ; au-delà, le contenu défile dans le bloc |
+| À l'ouverture | Bloc replié ou déplié à l'arrivée sur la page |
+| À la ligne | Le bloc commence une nouvelle rangée |
+| Figer à l'écran | Le bloc reste visible pendant le défilement d'un bloc voisin. Plusieurs blocs figés d'une même colonne s'empilent. Un bloc déplié trop haut défile à l'intérieur de son cadre ; un bloc dont même l'en-tête ne tient plus défile normalement, sous les autres |
+| Édition des champs | Autorise la modification des valeurs (droits Grist respectés) |
+| Afficher les champs vides | Pour les fiches de ce bloc |
+| Largeur des colonnes | Ajustées (sans ascenseur horizontal), celles de Grist, ou automatiques |
+| Afficher toutes les fiches | Une vue fiche affichée en liste |
+| Liste de sélection | Le bloc devient une liste déroulante dans l'en-tête |
+| **Filtre rapide**, **Filtre à l'ouverture** | Voir ci-dessous |
+
+### Disposition
+
+- **Section « Disposition » du panneau** :
+  - **Mode ultracompact** : les blocs prennent la largeur de leurs données.
+  - **Combler automatiquement les espaces libres** : un petit bloc peut remonter dans un trou.
+  - **Empiler les blocs sans trous** : chaque colonne s'empile indépendamment.
+- **☰ → Disposition** (hors du panneau) : on déplace les blocs à la souris et on les redimensionne par leur coin inférieur droit. Terminer par *Enregistrer* ou *Annuler*.
+
+### Filtre rapide
+
+Pour ajouter les boutons `Tous | Public | Privé` à un bloc :
+1. Dans les réglages du bloc, **Filtre rapide** : choisir le champ (par exemple *Réseau*).
+   - Les champs de la vue sont proposés d'abord, puis les autres colonnes de la table.
+   - Un champ non affiché peut donc servir de filtre.
+2. **Filtre à l'ouverture** : *Tous*, ou la valeur à présélectionner.
+3. Facultatif : **2ᵉ filtre rapide** sur un autre champ (par exemple *Type*), avec sa propre valeur à l'ouverture. Les deux filtres se cumulent : *Public* et *Ecole*.
+
+Le filtre est disponible pour les tableaux, les listes de fiches, les graphiques et les cartes.
+
+### Listes de sélection
+
+Pour une vue affichée en **Liste de sélection** :
+- **Colonne affichée** : le texte proposé dans la liste.
+- **Ordre** : alphabétique, ou celui de la vue Grist.
+- **Regrouper par** : intertitres dans la liste (par exemple les écoles par commune).
+- **ID de synchronisation** : les listes qui portent le même identifiant gardent la même sélection d'une page à l'autre (pages du widget comme autres pages Grist du même onglet).
+  - Seules les listes **sur la même table** se synchronisent : deux listes de tables différentes (par exemple Circonscriptions et Écoles) peuvent porter le même identifiant sans interférer.
+  - La sélection partagée est propre au **document** : elle ne passe pas d'un document à un autre (par exemple d'une copie de développement au document en service).
+  - Elle dure le temps de l'onglet du navigateur ; un nouvel onglet repart de la première valeur.
+
+### Cartes : réglages
+
+| Réglage | Effet |
+|---|---|
+| Étiquette | Colonne affichée au survol (par défaut celle de la carte Grist) |
+| Couleur selon | Couleur des points selon une colonne |
+| Contour selon | Cercle autour des points : selon une colonne, avec jusqu'à 3 couleurs et conditions (`=`, `≠`, `<`, `≤`, `>`, `≥`, `contient`), ou **situation QPV (calculée)** |
+| Quartiers prioritaires (QPV) | Affiche les périmètres des QPV |
+| Proximité d'un QPV | Distance retenue pour « à proximité » (0 à 500 m) |
+| Zonage | Communes, EPCI ou IRIS, dessinés sous les points |
+| Couleur des zones | Une couleur par zone, nombre de points, somme d'une colonne, ou valeur d'une table Grist reliée par code |
+| Code INSEE | Colonne du code commune ; ou « position des points » pour le déduire des coordonnées |
+| Étiquettes toujours visibles | Affiche toutes les étiquettes en permanence |
+
+**Colorer les zones avec vos propres données** (par exemple la population des 3-10 ans par IRIS) :
+1. Importer une table dans Grist, avec une colonne de code :
+   - code IRIS à 9 caractères pour les IRIS ;
+   - code INSEE pour les communes ;
+   - SIREN pour les EPCI.
+2. Couleur des zones → *selon une table Grist* : choisir la table, la colonne du code et la colonne de la valeur.
+
+### Menu de navigation
+
+Section **5. Navigation entre pages**. Ce réglage est commun à toutes les configurations.
+
+- **Adresse du document** : adresse de base du document Grist (https).
+- **Changer de page dans le widget** : le menu bascule de configuration sans recharger Grist. Recommandé quand toutes les configurations sont réunies dans une seule page Grist.
+- **Page d'accueil** (avec l'option précédente) : page du menu affichée à l'ouverture du widget. Par défaut, la configuration enregistrée dans le widget.
+- **Ouvrir les pages en mode page unique** : les liens ouvrent Grist sans ses menus. Proposé seulement sans « Changer de page dans le widget » ; sinon, utiliser **☰ → Plein écran**.
+- **Pour chaque lien** :
+  - libellé ;
+  - page Grist, ou **— ce widget —** ;
+  - configuration à afficher ;
+  - visibilité : *tous*, ou *si accès à* une table (le lien n'apparaît qu'aux personnes qui voient au moins une ligne de cette table).
+
+### Apparence
+
+Section **4. Affichage**, **Apparence (tout le document)** :
+- **Style État (DSFR)** : police Marianne et bleu France. Réservé aux **services de l'État** par les conditions d'utilisation du Système de design de l'État.
+- **Style neutre** : police du système et bleu neutre, pour toute autre structure (collectivité, association, entreprise…).
+
+Sans choix, le widget s'affiche en style État. Le choix vaut pour toutes les pages du document ; il n'est jamais proposé aux utilisateurs.
+
+### Enregistrer
+
+**Enregistrer** applique la configuration et l'écrit dans la table `W_Composition` du document. Les filtres rapides reviennent alors à leur valeur à l'ouverture.
+
+---
+
+## 2. Questions fréquentes
+
+**Un éditeur voit le bouton Configurer.**
+Il lit une ligne de `W_Admin`. Réservez la lecture de cette table aux administrateurs par une règle d'accès, puis vérifiez avec *Règles d'accès → Voir en tant que*.
+
+**Les onglets n'apparaissent pas pour certains utilisateurs.**
+Le menu des onglets est enregistré dans la ligne `_Navigation` de `W_Composition` : ces utilisateurs doivent pouvoir **lire** cette table (seule la modification est à réserver aux administrateurs). Vérifiez aussi les liens réglés sur « si accès à <table> ».
+
+**J'ai renommé une colonne ou une vue dans Grist.**
+Le panneau **Configurer** relit la structure à chaque ouverture : les nouveaux noms y apparaissent. Les colonnes déjà choisies dans les réglages suivent automatiquement leur renommage, pour les configurations enregistrées depuis la version 0.8.5. Pour l'affichage des pages, cliquez sur **⟳ Actualiser**.
+
+**Une carte reste vide.**
+- Vérifiez que les colonnes de latitude et de longitude sont renseignées.
+- Pour les contours des communes, la colonne **Code INSEE** doit contenir un code à 5 chiffres, et non le nom de la commune. Sinon, choisissez « position des points ».
+
+**Où voir la version du widget ?**
+Au survol du bouton Aide, dans l'onglet **Nouveautés**, et en bas du panneau **Configurer**.
