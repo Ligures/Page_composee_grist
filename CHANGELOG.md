@@ -16,6 +16,20 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.11.4] — Pas d'option « (vide) » dans les filtres rapides — 2026-10-14
+
+### Modifié
+- **Filtres rapides** : la valeur « (vide) » n'est plus proposée. Les lignes sans valeur restent visibles avec « Tous ».
+
+---
+
+## [0.8.11.3] — Réglages des cartes réorganisés — 2026-10-14
+
+### Modifié
+- **Configuration d'une carte** : les réglages sont regroupés en quatre encadrés — **Points** (étiquette, étiquettes toujours visibles, couleur selon, … sinon selon), **Contour des points**, **Quartiers prioritaires (QPV)** (afficher les périmètres, proximité, fichier) et **Zones sous les points** (zonage, code INSEE, couleur des zones). Le code INSEE suit désormais directement le choix du zonage.
+
+---
+
 ## [0.8.11.2] — Seconde couleur des points — 2026-10-14
 
 ### Ajouté

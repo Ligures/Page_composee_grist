@@ -98,18 +98,38 @@ Pour une vue affichée en **Liste de sélection** :
 
 ### Cartes : réglages
 
+Les réglages d'une carte sont regroupés en quatre encadrés.
+
+**Points**
+
 | Réglage | Effet |
 |---|---|
 | Étiquette | Colonne affichée au survol (par défaut celle de la carte Grist) |
+| Étiquettes toujours visibles | Affiche toutes les étiquettes en permanence |
 | Couleur selon | Couleur des points selon une colonne |
 | … sinon selon | Pour les points dont la colonne « Couleur selon » est vide : couleur selon une 2ᵉ colonne (teintes différentes, légende à part). Les autres points gardent leur couleur |
+
+**Contour des points**
+
+| Réglage | Effet |
+|---|---|
 | Contour selon | Cercle autour des points : selon une colonne, avec jusqu'à 3 couleurs et conditions (`=`, `≠`, `<`, `≤`, `>`, `≥`, `contient`), ou **situation QPV (calculée)** |
-| Quartiers prioritaires (QPV) | Affiche les périmètres des QPV |
+
+**Quartiers prioritaires (QPV)**
+
+| Réglage | Effet |
+|---|---|
+| Afficher les périmètres | Dessine les périmètres des QPV en pointillés rouges |
 | Proximité d'un QPV | Distance retenue pour « à proximité » (0 à 500 m) |
+| Fichier des QPV | Fichier GeoJSON des périmètres (par défaut `qpv-bretagne.geojson`) |
+
+**Zones sous les points**
+
+| Réglage | Effet |
+|---|---|
 | Zonage | Communes, EPCI ou IRIS, dessinés sous les points |
-| Couleur des zones | Une couleur par zone, nombre de points, somme d'une colonne, ou valeur d'une table Grist reliée par code |
 | Code INSEE | Colonne du code commune ; ou « position des points » pour le déduire des coordonnées |
-| Étiquettes toujours visibles | Affiche toutes les étiquettes en permanence |
+| Couleur des zones | Une couleur par zone, nombre de points, somme d'une colonne, ou valeur d'une table Grist reliée par code |
 
 **Colorer les zones avec vos propres données** (par exemple la population des 3-10 ans par IRIS) :
 1. Importer une table dans Grist, avec une colonne de code :

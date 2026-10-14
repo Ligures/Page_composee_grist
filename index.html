@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.11.2)              ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.11.4)              ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -1775,6 +1775,29 @@
         margin: 0;
         font-size: 12px;
       }
+      /* réglages des cartes, regroupés par thème (0.8.11.3) */
+      .mgrps {
+        grid-column: 1 / -1; /* toute la largeur des réglages du bloc */
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 6px 10px;
+        align-items: start;
+        margin-top: 4px;
+      }
+      .mgrp {
+        border: 1px solid var(--bord);
+        border-radius: 4px;
+        padding: 4px 8px 6px;
+        background: #fff;
+      }
+      .mgrp-h {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--bleu);
+        margin: 0 0 2px;
+      }
       .cforms {
         margin-top: 8px;
       }
@@ -2330,7 +2353,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.11.2"; // voir CHANGELOG.md
+      const VERSION = "0.8.11.4"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -3198,7 +3221,9 @@
         const col = qfCol(b, info, k);
         if (!col) return "";
         const cur = qfCur(b, k);
-        const vals = [...new Set(qfDropExcluded(b, info, allRows).map((r) => qfText(col, r)))].sort(COLL.compare);
+        const vals = [...new Set(qfDropExcluded(b, info, allRows).map((r) => qfText(col, r)))]
+          .filter((v) => v !== "(vide)") // pas d'option « (vide) » : ces lignes restent visibles avec « Tous »
+          .sort(COLL.compare);
         // valeur synchronisée absente de ce bloc (« Privé » alors que le bloc a « Privé sous contrat »…) :
         // pas de bouton supplémentaire ; les valeurs rapprochées sont surlignées (voir qfApply)
         const exact = !cur || vals.some((x) => qfSame(x, cur));
@@ -7201,7 +7226,8 @@
         ${C(`data-asel="${i}"`, isSelector(b), "Liste de sélection", "Affiche cette vue sous forme de liste déroulante dans l'en-tête : choisir une valeur pilote les blocs liés, comme un sélecteur.")}
         ${
           isMap
-            ? L(
+            ? `<div class="mgrps"><div class="mgrp"><div class="mgrp-h" title="Ce qui s'affiche sur chaque point : son étiquette et sa couleur.">Points</div>` +
+              L(
                 "Étiquette",
                 sel(
                   "mapLabel",
@@ -7216,6 +7242,12 @@
                 ),
                 "Colonne affichée au survol ou au clic sur un point. « auto » reprend la colonne « Name » de la carte Grist.",
               ) +
+              C(
+                `data-mlbl="${i}"`,
+                b.mapLabelsOn,
+                "Étiquettes toujours visibles",
+                "Affiche l'étiquette de chaque point en permanence, au lieu de la montrer au survol.",
+              ) +
               L(
                 "Couleur selon",
                 sel("mapColor", [["", "aucune"], ...colOpts(s)], b.mapColor || ""),
@@ -7228,16 +7260,20 @@
                     "Pour les points dont la colonne « Couleur selon » est vide : couleur selon cette 2ᵉ colonne (teintes différentes, légende à part). Les autres points gardent la couleur de la 1re colonne.",
                   )
                 : "") +
+              `</div>` +
+              `<div class="mgrp"><div class="mgrp-h" title="Cercle coloré autour des points, selon une colonne ou la situation en quartier prioritaire.">Contour des points</div>` +
               L(
                 "Contour selon",
                 sel("mapRing", [["", "aucun"], ["__qpv", "situation QPV (calculée)"], ...colOpts(s)], b.mapRing || ""),
                 "Colore le cercle qui entoure chaque point selon la valeur d'une colonne, avec les couleurs que vous choisissez (3 au plus). Le remplissage du point reste celui de « Couleur selon ».",
               ) +
               (b.mapRing && b.mapRing !== "__qpv" ? mapRulesHtml(b, i, s) : "") +
+              `</div>` +
+              `<div class="mgrp"><div class="mgrp-h" title="Périmètres des QPV et proximité des points.">Quartiers prioritaires (QPV)</div>` +
               C(
                 `data-mqpv="${i}"`,
                 b.mapQpv,
-                "Quartiers prioritaires (QPV)",
+                "Afficher les périmètres",
                 "Dessine les périmètres des QPV 2024 (ANCT) en pointillés rouges. Avec « Contour selon : situation QPV », les points situés dans un QPV sont cerclés de rouge, ceux à proximité d'orange.",
               ) +
               (b.mapQpv || b.mapRing === "__qpv"
@@ -7262,6 +7298,8 @@
                     "Fichier GeoJSON (WGS84) des périmètres, placé à côté du widget sur GitHub. Vide : qpv-bretagne.geojson. Une adresse complète https://… est aussi acceptée.",
                   )
                 : "") +
+              `</div>` +
+              `<div class="mgrp"><div class="mgrp-h" title="Communes, EPCI ou IRIS dessinés sous les points, et leur couleur.">Zones sous les points</div>` +
               L(
                 "Zonage",
                 sel(
@@ -7276,6 +7314,17 @@
                 ),
                 "Dessine sous les points les communes qui en contiennent, les EPCI entiers (contours geo.api.gouv.fr, communes fusionnées), ou les IRIS des communes découpées en quartiers (service IGN, édition la plus récente).",
               ) +
+              (zoneMode(b)
+                ? L(
+                    "Code INSEE",
+                    sel(
+                      "mapCommune",
+                      [["", "auto"], ["__pos", "position des points"], ...colOpts(s)],
+                      b.mapCommune || "",
+                    ),
+                    "Colonne donnant le code INSEE de la commune (ou une référence vers la table des communes). « position des points » : la commune est déduite des coordonnées, sans colonne. Si la colonne ne donne pas de code lisible, la position est utilisée automatiquement.",
+                  )
+                : "") +
               (zoneMode(b)
                 ? L(
                     "Couleur des zones",
@@ -7309,23 +7358,7 @@
                     "Colonne numérique additionnée pour chaque zone (par exemple l'effectif des écoles).",
                   )
                 : "") +
-              (zoneMode(b)
-                ? L(
-                    "Code INSEE",
-                    sel(
-                      "mapCommune",
-                      [["", "auto"], ["__pos", "position des points"], ...colOpts(s)],
-                      b.mapCommune || "",
-                    ),
-                    "Colonne donnant le code INSEE de la commune (ou une référence vers la table des communes). « position des points » : la commune est déduite des coordonnées, sans colonne. Si la colonne ne donne pas de code lisible, la position est utilisée automatiquement.",
-                  )
-                : "") +
-              C(
-                `data-mlbl="${i}"`,
-                b.mapLabelsOn,
-                "Étiquettes toujours visibles",
-                "Affiche l'étiquette de chaque point en permanence, au lieu de la montrer au survol.",
-              )
+              `</div></div>`
             : ""
         }
         ${
