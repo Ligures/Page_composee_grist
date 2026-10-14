@@ -75,13 +75,12 @@ Le bouton **⚙ Configurer** ouvre un panneau sur la moitié droite de l'écran 
 
 ### Filtre rapide
 
-Pour ajouter les boutons `Tous | Public | Privé` à un bloc :
-1. Dans les réglages du bloc, **Filtre rapide** : choisir le champ (par exemple *Réseau*).
-   - Les champs de la vue sont proposés d'abord, puis les autres colonnes de la table.
-   - Un champ non affiché peut donc servir de filtre.
-2. **Filtre à l'ouverture** : *Tous*, ou la valeur à présélectionner.
-3. Facultatif : **2ᵉ filtre rapide** sur un autre champ (par exemple *Type*), avec sa propre valeur à l'ouverture. Les deux filtres se cumulent : *Public* et *Ecole*.
-4. Facultatif : **Valeurs exclues** (pour chaque filtre) : cocher les valeurs à retirer. Elles disparaissent des boutons du filtre **et** des lignes du bloc, même sur « Tous » (par exemple un établissement « Fermé »).
+Dans les réglages du bloc, chaque filtre a son encadré : **Filtre rapide**, puis **2ᵉ filtre rapide** (proposé une fois le premier choisi). Chacun contient :
+1. **Champ** : le champ filtré (par exemple *Réseau*). Les champs de la vue sont proposés d'abord, puis les autres colonnes de la table : un champ non affiché peut donc servir de filtre.
+2. **À l'ouverture** : *Tous*, ou la valeur à présélectionner.
+3. **Valeurs exclues** (facultatif) : cocher les valeurs à retirer. Elles disparaissent des boutons du filtre **et** des lignes du bloc, même sur « Tous » (par exemple un établissement « Fermé »). Pour le 1er filtre, **(SO)** (lignes sans valeur) peut aussi être exclu.
+
+Les deux filtres se cumulent : *Public* et *Ecole*.
 
 Le filtre est disponible pour les tableaux, les listes de fiches, les graphiques et les cartes.
 

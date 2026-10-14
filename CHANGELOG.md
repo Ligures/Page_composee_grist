@@ -16,6 +16,14 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.9.0.2] — Réglages des filtres rapides regroupés — 2026-10-14
+
+### Modifié
+- **Configuration d'un bloc** : chaque filtre rapide a son encadré (**Filtre rapide**, **2ᵉ filtre rapide**), qui réunit le champ, la valeur à l'ouverture et les valeurs exclues, comme pour les réglages des cartes.
+- **1er filtre** : l'option **(SO)** (lignes sans valeur) peut être choisie à l'ouverture et cochée dans les valeurs exclues.
+
+---
+
 ## [0.9.0.1] — Légende de la seconde couleur allégée — 2026-10-14
 
 ### Modifié

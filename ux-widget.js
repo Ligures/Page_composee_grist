@@ -1,4 +1,4 @@
-/* UX widget grist — script (version 0.9.0.1). Développeur : Ligures. Licence MIT (voir LICENSE).
+/* UX widget grist — script (version 0.9.0.2). Développeur : Ligures. Licence MIT (voir LICENSE).
    Chargé par index.html, à la fin du corps de la page. Voir le sommaire ci-dessous. */
 "use strict";
 /* ════════════════════════════════════════════════════════════════════════════
@@ -56,7 +56,7 @@
 /* ---------- État et constantes ---------- */
 // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
 // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-const VERSION = "0.9.0.1"; // voir CHANGELOG.md
+const VERSION = "0.9.0.2"; // voir CHANGELOG.md
 const DEFAULTS = {
   name: "Page composée",
   title: "",
@@ -4897,22 +4897,23 @@ ${
     "État du bloc à l'ouverture de la page. Un bloc replié n'affiche que son titre ; un clic sur le titre le déplie.",
   )}
   ${C(`data-nl="${i}"`, b.newLine, "À la ligne", "Le bloc commence une nouvelle rangée, même s'il reste de la place à droite du bloc précédent.")}
+  ${C(`data-asel="${i}"`, isSelector(b), "Liste de sélection", "Affiche cette vue sous forme de liste déroulante dans l'en-tête : choisir une valeur pilote les blocs liés, comme un sélecteur.")}
   ${(() => {
-    // filtre rapide du bloc : champ (champs de la vue d'abord, puis autres colonnes de la table) et valeur à l'ouverture
+    // filtres rapides du bloc (0.9.0.2) : un encadré par filtre — champ, valeur à l'ouverture, valeurs exclues
     if (!(["record", "detail", "chart", "custom"].includes(s.parentKey) || (s.parentKey === "single" && b.asList)) || isSelector(b)) return "";
     const all = (m.colsByTable.get(s.tableRef) || []).filter((c) => !c.colId.startsWith("gristHelper_") && c.colId !== "manualSort");
     const shown = new Set((getInfo(b.id)?.fields || []).map((f) => f.col?.colId));
     const inView = byLabel(all.filter((c) => shown.has(c.colId))), others = byLabel(all.filter((c) => !shown.has(c.colId)));
-    let out = "";
-    // deux emplacements : 2e filtre proposé une fois le premier choisi ; les deux se cumulent
+    const groups = [];
+    // deux emplacements : le 2nd est proposé une fois le premier choisi ; les deux se cumulent
     for (const k of [1, 2]) {
       const fk = k === 2 ? "qfField2" : "qfField",
         dk = k === 2 ? "qfDefault2" : "qfDefault";
       if (k === 2 && !b.qfField) break;
       const opt = (c) => `<option value="${esc(c.colId)}" ${c.colId === b[fk] ? "selected" : ""}>${esc(c.label || c.colId)}</option>`;
       const field = `<select data-f="${fk}" data-i="${i}"><option value="">aucun</option>${inView.length ? `<optgroup label="Champs de la vue">${inView.map(opt).join("")}</optgroup>` : ""}${others.length ? `<optgroup label="Autres colonnes de la table">${others.map(opt).join("")}</optgroup>` : ""}</select>`;
-      out += L(
-        k === 2 ? "2ᵉ filtre rapide" : "Filtre rapide",
+      let g = L(
+        "Champ",
         field,
         k === 2
           ? "Second filtre dans l'en-tête du bloc, sur un autre champ. Il se cumule avec le premier (par exemple Réseau = Public et Type = Ecole)."
@@ -4921,17 +4922,23 @@ ${
       const qc = b[fk] && all.find((c) => c.colId === b[fk]);
       if (qc) {
         const vals = qfValuesOf([qc]);
+        // 1er filtre : les lignes sans valeur forment l'option « (SO) » (sans objet)
+        if (k === 1) {
+          const tid = m.tables.get(qc.parentId)?.tableId;
+          if ([...(S.byId[tid]?.values() || [])].some((r) => qfText(qc, r) === "(vide)")) vals.push("(vide)");
+        }
         if (b[dk] && !vals.some((v) => qfSame(v, b[dk]))) vals.push(b[dk]);
-        out += L(k === 2 ? "2ᵉ filtre à l'ouverture" : "Filtre à l'ouverture", `<select data-f="${dk}" data-i="${i}"><option value="">Tous</option>${vals.map((v) => `<option value="${esc(v)}" ${b[dk] && qfSame(v, b[dk]) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`, `Valeur de « ${qc.label || qc.colId} » sélectionnée à l'ouverture de la page. L'utilisateur peut ensuite changer.`);
+        const shownV = (v) => (v === "(vide)" ? "(SO)" : v);
+        g += L("À l'ouverture", `<select data-f="${dk}" data-i="${i}"><option value="">Tous</option>${vals.map((v) => `<option value="${esc(v)}" ${b[dk] && qfSame(v, b[dk]) ? "selected" : ""}>${esc(shownV(v))}</option>`).join("")}</select>`, `Valeur de « ${qc.label || qc.colId} » sélectionnée à l'ouverture de la page. L'utilisateur peut ensuite changer.`);
         const ex = qfExclOf(b, k);
-        out += `<div class="qfx" title="Valeurs retirées des boutons du filtre ET des lignes affichées dans ce bloc (par exemple « Fermé »)."><span class="lt">${k === 2 ? "2ᵉ filtre : valeurs exclues" : "Valeurs exclues"}</span><span class="qfx-list">${[...new Set([...vals, ...ex])]
-          .map((v) => `<label><input type="checkbox" data-qfx="${i}" data-qk="${k}" value="${esc(v)}" ${ex.some((x) => qfSame(x, v)) ? "checked" : ""}> ${esc(v)}</label>`)
+        g += `<div class="qfx" title="Valeurs retirées des boutons du filtre ET des lignes affichées dans ce bloc (par exemple « Fermé »)."><span class="lt">Valeurs exclues</span><span class="qfx-list">${[...new Set([...vals, ...ex])]
+          .map((v) => `<label><input type="checkbox" data-qfx="${i}" data-qk="${k}" value="${esc(v)}" ${ex.some((x) => qfSame(x, v)) ? "checked" : ""}> ${esc(shownV(v))}</label>`)
           .join("")}</span></div>`;
       }
+      groups.push(`<div class="mgrp"><div class="mgrp-h" title="Boutons « Tous | valeurs » dans l'en-tête du bloc">${k === 2 ? "2ᵉ filtre rapide" : "Filtre rapide"}</div>${g}</div>`);
     }
-    return out;
+    return `<div class="mgrps">${groups.join("")}</div>`;
   })()}
-  ${C(`data-asel="${i}"`, isSelector(b), "Liste de sélection", "Affiche cette vue sous forme de liste déroulante dans l'en-tête : choisir une valeur pilote les blocs liés, comme un sélecteur.")}
   ${
     isMap
       ? `<div class="mgrps"><div class="mgrp"><div class="mgrp-h" title="Ce qui s'affiche sur chaque point : son étiquette et sa couleur.">Points</div>` +
