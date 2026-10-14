@@ -16,6 +16,14 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.11.0] — Cadrage des cartes — 2026-10-14
+
+### Ajouté
+- **Cartes : cadrage sur l'ensemble des données** à l'ouverture (points et zones dessinées). Tant que l'utilisateur n'a pas déplacé ou zoomé la carte, elle se recadre quand son bloc change de taille (bloc déplié, plein écran, mise en page) : une carte repliée à l'ouverture est bien cadrée une fois dépliée.
+- **Bouton ⤢** sous le zoom de chaque carte : revient au cadrage sur l'ensemble des données.
+
+---
+
 ## [0.8.10.6] — Plus de question « quelle configuration ? » aux utilisateurs — 2026-10-14
 
 ### Modifié

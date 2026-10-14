@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.10.6)              ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.11.0)              ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -1241,6 +1241,11 @@
         justify-content: center;
         padding: 12px;
       }
+      .leaflet-bar a.map-fit {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--bleu);
+      }
       #fmodal {
         position: fixed;
         inset: 0;
@@ -2302,7 +2307,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.10.6"; // voir CHANGELOG.md
+      const VERSION = "0.8.11.0"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -5236,8 +5241,7 @@
               },
             },
           ).addTo(map);
-          if (!keepView && feats.length && mode !== "iris")
-            map.fitBounds(layer.getBounds(), { padding: [12, 12], animate: false });
+          if (feats.length && mode !== "iris") map._uxExtend?.(layer.getBounds(), keepView); // cadrage : points + zones
           if (scale?.items.length) {
             const c = L.control({ position: "topright" });
             c.onAdd = () => {
@@ -5460,18 +5464,54 @@
               ctl.addTo(map);
             }
             markers.get(selId)?.bringToFront();
-            if (saved && saved.key === key) map.setView(saved.center, saved.zoom, { animate: false });
-            else if (pts.length > 1)
-              map.fitBounds(L.latLngBounds(pts.map((p) => [p.lat, p.lng])), {
-                padding: [20, 20],
-                maxZoom: 14,
-                animate: false,
+            /* Cadrage (0.8.11) : à l'ouverture, la carte montre l'ensemble des données (points, et zones dessinées).
+               Tant que l'utilisateur n'a pas déplacé ou zoomé la carte, elle se recadre quand son cadre change de taille
+               (bloc déplié, plein écran, mise en page) ; le bouton ⤢ y revient à tout moment. */
+            const dataBounds = L.latLngBounds(pts.map((p) => [p.lat, p.lng]));
+            let userMoved = false;
+            const fitAll = () => {
+              if (!el.isConnected || !el.clientWidth || !el.clientHeight) return; // cadre invisible : plus tard
+              map.invalidateSize();
+              const bb = dataBounds;
+              if (bb.getNorthEast().equals(bb.getSouthWest())) map.setView(bb.getCenter(), 14, { animate: false });
+              else map.fitBounds(bb, { padding: [20, 20], maxZoom: 15, animate: false });
+            };
+            map._uxExtend = (bounds, keep) => {
+              dataBounds.extend(bounds);
+              if (!keep && !userMoved) fitAll();
+            };
+            const markMoved = () => (userMoved = true);
+            map.on("dragstart", markMoved);
+            for (const evName of ["wheel", "dblclick", "touchstart"]) el.addEventListener(evName, markMoved, { passive: true });
+            const fitCtl = L.control({ position: "topleft" });
+            fitCtl.onAdd = () => {
+              const d = L.DomUtil.create("div", "leaflet-bar");
+              d.innerHTML = '<a href="#" role="button" class="map-fit" title="Recadrer sur l\'ensemble des données" aria-label="Recadrer sur l\'ensemble des données">⤢</a>';
+              L.DomEvent.disableClickPropagation(d);
+              d.firstChild.addEventListener("click", (e) => {
+                e.preventDefault();
+                userMoved = false;
+                fitAll();
               });
+              return d;
+            };
+            fitCtl.addTo(map);
+            el.querySelector(".leaflet-control-zoom")?.addEventListener("click", markMoved);
+            if (saved && saved.key === key) {
+              map.setView(saved.center, saved.zoom, { animate: false }); // même carte redessinée : on garde la vue
+              userMoved = !!saved.userMoved;
+            } else fitAll();
             map.on("moveend", () => {
-              S.mapViews[info.secId] = { key, center: map.getCenter(), zoom: map.getZoom() };
+              S.mapViews[info.secId] = { key, center: map.getCenter(), zoom: map.getZoom(), userMoved };
             });
+            let lastW = el.clientWidth,
+              lastH = el.clientHeight;
             new ResizeObserver(() => {
-              if (el.isConnected) map.invalidateSize();
+              if (!el.isConnected) return;
+              map.invalidateSize();
+              if ((el.clientWidth !== lastW || el.clientHeight !== lastH) && !userMoved) fitAll(); // cadre redimensionné
+              lastW = el.clientWidth;
+              lastH = el.clientHeight;
             }).observe(el);
           } catch (e) {
             el.outerHTML = `<div class="msg err">Carte : ${esc(e.message || e)}</div>`;
