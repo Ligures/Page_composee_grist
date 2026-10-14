@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════════════╗
-  ║  UX widget grist — widget personnalisé Grist (version 0.8.11.4)              ║
+  ║  UX widget grist — widget personnalisé Grist (version 0.8.11.6)              ║
   ╚══════════════════════════════════════════════════════════════════════════════╝
   Affiche sur une seule page, condensée et lisible, plusieurs vues natives d'un
   document Grist (tableaux, fiches, listes de fiches, graphiques natifs et avancés,
@@ -2353,7 +2353,7 @@
       /* ---------- État et constantes ---------- */
       // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
       // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-      const VERSION = "0.8.11.4"; // voir CHANGELOG.md
+      const VERSION = "0.8.11.6"; // voir CHANGELOG.md
       const DEFAULTS = {
         name: "Page composée",
         title: "",
@@ -3221,9 +3221,14 @@
         const col = qfCol(b, info, k);
         if (!col) return "";
         const cur = qfCur(b, k);
-        const vals = [...new Set(qfDropExcluded(b, info, allRows).map((r) => qfText(col, r)))]
-          .filter((v) => v !== "(vide)") // pas d'option « (vide) » : ces lignes restent visibles avec « Tous »
-          .sort(COLL.compare);
+        // lignes sans valeur : 1er filtre → option « (SO) » (sans objet), placée en dernier ;
+        // 2nd filtre → pas d'option (ces lignes restent visibles avec « Tous »)
+        // bloc sans aucune donnée : le filtre reste affiché, avec les valeurs connues du champ (choix Grist, table chargée)
+        const noData = !allRows.length;
+        const vals = [...new Set(noData ? qfValuesOf([col]).filter((v) => !qfExcluded(b, k, v)) : qfDropExcluded(b, info, allRows).map((r) => qfText(col, r)))]
+          .filter((v) => k === 1 || v !== "(vide)")
+          .sort((x, y) => (x === "(vide)") - (y === "(vide)") || COLL.compare(x, y));
+        const shown = (v) => (v === "(vide)" ? "(SO)" : v); // libellé affiché
         // valeur synchronisée absente de ce bloc (« Privé » alors que le bloc a « Privé sous contrat »…) :
         // pas de bouton supplémentaire ; les valeurs rapprochées sont surlignées (voir qfApply)
         const exact = !cur || vals.some((x) => qfSame(x, cur));
@@ -3231,20 +3236,20 @@
           exact ? qfSame(v, cur) : qfNorm(v).startsWith(`${qfNorm(cur)} `) || qfNorm(cur).startsWith(`${qfNorm(v)} `);
         // une seule valeur dans le bloc : le filtre ne sert à rien (« Public » = « Tous »), sauf si une valeur
         // différente lui a été appliquée (synchronisation) : il reste alors affiché pour pouvoir revenir à « Tous »
-        if (vals.length < 2 && (!cur || vals.every(isOn))) return "";
+        if (!noData && vals.length < 2 && (!cur || vals.every(isOn))) return "";
         const name = col.label || col.colId;
         const tip = `Filtrer ce bloc sur « ${name} »`;
         // aide au survol de chaque valeur : clic sur ce bloc, clic milieu (ou Maj+clic) sur tous les blocs
         const sync = `\nClic milieu (ou Maj+clic) : appliquer à tous les blocs de la page filtrés sur « ${name} »`;
-        const pr = cur ? `<span class="qf-print">${esc(name)} : ${esc(vals.find((x) => qfSame(x, cur)) || cur)}</span>` : ""; // impression
+        const pr = cur ? `<span class="qf-print">${esc(name)} : ${esc(shown(vals.find((x) => qfSame(x, cur)) || cur))}</span>` : ""; // impression
         // trois présentations, choisies par fitQf() selon la place dans l'en-tête :
         //   « full » boutons côte à côte · « compact » seule l'option active, les autres en liste au clic
         //   · « icon » icône de filtre (pastille si un filtre est actif), liste au clic
-        const label = cur ? vals.find((x) => qfSame(x, cur)) || cur : "Tous"; // valeur rapprochée : son propre texte
+        const label = cur ? shown(vals.find((x) => qfSame(x, cur)) || cur) : "Tous"; // valeur rapprochée : son propre texte
         const many = vals.length > 4; // au-delà de 4 valeurs : valeur active + liste au clic, comme sur petit écran
         return `${pr}<span class="qf ${many ? "compact" : "full"}${cur ? " active" : ""}"${many ? ' data-many="1"' : ""} title="${esc(tip)}">
           <button type="button" class="qf-cur" data-qftog="${b.id}" data-qk="${k}" aria-haspopup="true" aria-label="${esc(tip)} : ${esc(label)}">${QF_ICON}<span class="qf-lab">${esc(label)}</span><span class="qf-caret">▾</span></button>
-          <span class="qf-opts">${[["", "Tous"], ...vals.map((v) => [v, v])]
+          <span class="qf-opts">${[["", "Tous"], ...vals.map((v) => [v, shown(v)])]
             .map(([v, l]) => `<button type="button" data-qf="${b.id}" data-qk="${k}" data-qv="${esc(v)}" class="${(v ? cur && isOn(v) : !cur) ? "on" : ""}" title="${esc(`Clic : ${v ? `n'afficher que « ${l} »` : "tout afficher"} dans ce bloc${sync}`)}">${esc(l)}</button>`)
             .join("")}</span></span>`;
       }
@@ -6004,7 +6009,7 @@
               const qcs = [qfCol(b, info, 1), qfCol(b, info, 2)].filter(Boolean);
               if (qcs.length) await ensureRefTables(qcs); // champ du filtre rapide de type référence : texte affiché
               const before = rows.length; // lignes avant le filtre rapide
-              const qfCtl = before ? qfHtml(b, info, rows) : ""; // filtre rapide : sélecteur calculé sur toutes les lignes…
+              const qfCtl = qfHtml(b, info, rows); // filtre rapide : sélecteur calculé sur toutes les lignes (affiché même sans données)…
               rows = qfApply(b, info, rows); // …puis seules les lignes choisies sont affichées
               const selId = await selectedRowId(b.id, ctx);
               const isSingle = info.kind === "single";

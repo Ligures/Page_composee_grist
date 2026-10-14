@@ -16,6 +16,20 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.8.11.6] — Filtres rapides affichés sur un bloc sans données — 2026-10-14
+
+### Modifié
+- **Filtres rapides** : ils restent affichés quand le bloc n'a aucune donnée (par exemple après une sélection), avec les valeurs connues du champ. Exception : un bloc masqué par l'option « Masquer les blocs sans données ».
+
+---
+
+## [0.8.11.5] — Valeur « (SO) » du premier filtre — 2026-10-14
+
+### Modifié
+- **Filtres rapides, lignes sans valeur** : le 1er filtre propose l'option **« (SO) »** (sans objet), en dernière position, pour n'afficher que ces lignes ; le 2nd filtre ne propose pas d'option pour elles (elles restent visibles avec « Tous »).
+
+---
+
 ## [0.8.11.4] — Pas d'option « (vide) » dans les filtres rapides — 2026-10-14
 
 ### Modifié
