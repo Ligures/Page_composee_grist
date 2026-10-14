@@ -95,7 +95,7 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 
 ### Imprimer et exporter
 
-- **Imprimer** : la page s'imprime en A4 paysage, avec la même disposition qu'à l'écran. Tous les blocs sont dépliés le temps de l'impression. Le titre de la page et les sélections en cours figurent en tête. Pour un PDF, choisir « Enregistrer au format PDF » dans la fenêtre d'impression. Les boutons de filtre rapide ne sont pas imprimés ; un filtre actif est rappelé en texte à côté du titre du bloc (par exemple « Réseau : Privé »).
+- **Imprimer** : la page s'imprime en A4 paysage, avec la même disposition qu'à l'écran. Un bloc plus haut qu'une page (long tableau) commence sur une nouvelle ligne et se poursuit sur les pages suivantes. Utiliser le bouton **Imprimer** du widget, et non l'impression de la page Grist entière (qui n'imprime que la partie visible du widget). Tous les blocs sont dépliés le temps de l'impression. Le titre de la page et les sélections en cours figurent en tête. Pour un PDF, choisir « Enregistrer au format PDF » dans la fenêtre d'impression. Les boutons de filtre rapide ne sont pas imprimés ; un filtre actif est rappelé en texte à côté du titre du bloc (par exemple « Réseau : Privé »).
 - **Exporter des données** : utiliser l'export de Grist (menu de la vue native, *Télécharger en CSV / XLSX*).
 
 ### Sur smartphone

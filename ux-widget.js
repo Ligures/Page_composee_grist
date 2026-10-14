@@ -1,4 +1,4 @@
-/* UX widget grist — script (version 0.9.0.4). Développeur : Ligures. Licence MIT (voir LICENSE).
+/* UX widget grist — script (version 0.9.0.5). Développeur : Ligures. Licence MIT (voir LICENSE).
    Chargé par index.html, à la fin du corps de la page. Voir le sommaire ci-dessous. */
 "use strict";
 /* ════════════════════════════════════════════════════════════════════════════
@@ -56,7 +56,7 @@
 /* ---------- État et constantes ---------- */
 // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
 // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-const VERSION = "0.9.0.4"; // voir CHANGELOG.md
+const VERSION = "0.9.0.5"; // voir CHANGELOG.md
 const DEFAULTS = {
   name: "Page composée",
   title: "",
@@ -775,7 +775,8 @@ function blockStyle(b, kind) {
     placement(b, kind, !!S.cfg.flux) +
     (HEIGHTS[b.height] ? `--h:${HEIGHTS[b.height]}px;` : "") +
     (CW[b.cardW] ? `--cw:${CW[b.cardW]}px;` : "") +
-    (!S.cfg.flux && (b.rows || 1) > 1 ? `--rows:${b.rows};` : "")
+    (!S.cfg.flux && (b.rows || 1) > 1 ? `--rows:${b.rows};` : "") +
+    (!S.cfg.flux ? `--span:${Math.min(b.width || DEFAULT_WIDTH[kind] || 3, 6)};` : "") // largeur à l'impression
   );
 }
 // état replié initial : option du bloc, sinon graphiques repliés (cartes et autres vues dépliées)
@@ -4324,12 +4325,10 @@ async function printPage() {
   // largeur d'une page A4 paysage : graphiques, cartes et tableaux se recalent avant l'impression
   document.documentElement.classList.add("printing");
   await new Promise((r) => setTimeout(r, 50));
-  document
-    .querySelectorAll("#grid .block")
-    .forEach((el) => el.classList.toggle("printbig", el.offsetHeight > 900));
   await new Promise((r) => setTimeout(r, 400));
   window.dispatchEvent(new Event("resize")); // graphiques et cartes à la bonne taille
   await new Promise((r) => setTimeout(r, 300));
+  markPrintBig();
   const restore = () => {
     S.collapsed = saved;
     S.maxed = maxed;
@@ -4341,6 +4340,16 @@ async function printPage() {
   window.addEventListener("afterprint", restore);
   window.print();
 }
+// markPrintBig — Repère les blocs plus hauts qu'une page : à l'impression ils partent à la ligne
+// et se coupent d'une page à l'autre (contenu complet mesuré, sans la hauteur limitée de l'écran).
+function markPrintBig() {
+  document.querySelectorAll("#grid > .block").forEach((el) => {
+    const inner = [...el.querySelectorAll(":scope > .bb, .tbl-wrap, .cartes")].map((x) => x.scrollHeight + 40);
+    const h = Math.max(el.offsetHeight, ...inner);
+    el.classList.toggle("printbig", h > 600);
+  });
+}
+window.addEventListener("beforeprint", markPrintBig); // impression lancée par Ctrl+P
 $("#btnPrint").addEventListener("click", () => printPage());
 // Plein écran : la page Grist qui contient ce widget, en mode page unique (sans les menus de Grist), nouvel onglet
 $("#btnSingle").addEventListener("click", async () => {

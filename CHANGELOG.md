@@ -16,6 +16,15 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.9.0.5] — Impression des tableaux longs, 2ᵉ correction — 2026-10-14
+
+### Corrigé
+- **Impression des tableaux longs** (pages blanches, morceaux de tableau isolés, document de plusieurs centaines de pages) : à l'impression, la page n'utilise plus la grille CSS, que les navigateurs coupent mal d'une page à l'autre. Les blocs sont placés en flux normal :
+  - les blocs courts restent côte à côte, chacun avec sa largeur en sixièmes ;
+  - un bloc plus haut qu'une page commence sur une nouvelle ligne, garde sa largeur et se coupe d'une page à l'autre, en-tête de colonnes répété.
+- Blocs « figés » et « très grands » : à l'impression, leur tableau s'affiche en entier ; il n'était plus limité à la hauteur de l'écran que dans la grille.
+- Les blocs longs sont aussi repérés quand on imprime avec Ctrl+P.
+
 ## [0.9.0.4] — Impression des tableaux longs — 2026-10-14
 
 ### Corrigé

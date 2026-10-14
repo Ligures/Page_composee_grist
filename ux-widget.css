@@ -1,4 +1,4 @@
-/* UX widget grist — feuilles de style (version 0.9.0.4).
+/* UX widget grist — feuilles de style (version 0.9.0.5).
    Mise en page (grille de 6 colonnes), blocs, tableaux, fiches, cartes, panneau de configuration, impression.
    Chargée par index.html ; ne contient aucune donnée. */
 @font-face {
@@ -2098,38 +2098,56 @@ html.printing #grid {
   .bh .qf-print {
     display: inline !important;
   }
-  .grid {
-    gap: 8px;
+  /* Sur papier, la grille CSS se coupe mal d'une page à l'autre (pages blanches, morceaux de
+     tableaux isolés). On passe en flux normal : les blocs courts se rangent côte à côte avec leur
+     largeur en sixièmes (--span) ; un bloc long (printbig) part à la ligne et se coupe librement. */
+  .grid:not(.flux) {
+    display: block !important;
+    font-size: 0; /* supprime les espaces entre blocs côte à côte */
+    margin-right: -8px; /* compense la marge droite du dernier bloc de chaque ligne */
   }
-  /* « sans trous » : les hauteurs mesurées à l'écran ne valent plus sur papier → grille normale */
-  .grid.masonry {
-    grid-auto-rows: auto !important;
-    row-gap: 8px !important;
+  .grid:not(.flux) > .block {
+    display: inline-block !important;
+    vertical-align: top;
+    font-size: 11px;
+    width: calc(var(--span, 6) * 100% / 6 - 8.5px) !important;
+    margin: 0 8px 8px 0 !important;
+    height: auto !important;
+    break-inside: avoid;
   }
-  .grid.masonry > .block {
-    grid-row: auto !important;
-    margin-bottom: 0 !important;
+  /* bloc long : bloc normal (un « inline-block » ne peut pas se couper entre deux pages) */
+  .grid:not(.flux) > .block.printbig {
+    display: block !important;
   }
   /* graphiques : suivent la largeur du papier */
   .block canvas {
     max-width: 100% !important;
   }
-  .block {
-    break-inside: avoid;
+  /* ni défilement interne, ni hauteur limitée, ni mise en page flex (blocs figés, très grands) */
+  .block,
+  .block > .bb,
+  .block > .bb > .tbl-wrap,
+  .block.tall > .bb > .tbl-wrap,
+  .block.sticky > .bb > .tbl-wrap {
     position: static !important;
     max-height: none !important;
+    min-height: 0 !important;
     overflow: visible !important;
     box-shadow: none !important;
+  }
+  .block.tall,
+  .block.sticky,
+  .block.tall > .bb,
+  .block.sticky > .bb {
+    display: block !important;
+    height: auto !important;
   }
   .block.collapsed > .bb {
     display: block !important;
   }
-  /* les blocs longs (tableaux, fiches) peuvent se couper entre deux pages :
-     sinon un grand tableau est repoussé page suivante et laisse des pages blanches */
   .block.printbig,
-  .block:has(.tbl-wrap),
-  .block:has(.cartes) {
-    break-inside: auto;
+  .block.printbig > .bb {
+    break-inside: auto !important;
   }
   .tbl-wrap,
   .cartes {
