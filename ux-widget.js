@@ -1,4 +1,4 @@
-/* UX widget grist — script (version 0.9.0.2). Développeur : Ligures. Licence MIT (voir LICENSE).
+/* UX widget grist — script (version 0.9.0.3). Développeur : Ligures. Licence MIT (voir LICENSE).
    Chargé par index.html, à la fin du corps de la page. Voir le sommaire ci-dessous. */
 "use strict";
 /* ════════════════════════════════════════════════════════════════════════════
@@ -56,7 +56,7 @@
 /* ---------- État et constantes ---------- */
 // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
 // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-const VERSION = "0.9.0.2"; // voir CHANGELOG.md
+const VERSION = "0.9.0.3"; // voir CHANGELOG.md
 const DEFAULTS = {
   name: "Page composée",
   title: "",
@@ -4321,6 +4321,9 @@ async function printPage() {
   document.body.style.overflow = "";
   document.querySelectorAll("#grid .block.collapsed").forEach((el) => el.classList.remove("collapsed"));
   document.querySelectorAll("#grid .block.maxed").forEach((el) => el.classList.remove("maxed"));
+  // largeur d'une page A4 paysage : graphiques, cartes et tableaux se recalent avant l'impression
+  document.documentElement.classList.add("printing");
+  await new Promise((r) => setTimeout(r, 50));
   document
     .querySelectorAll("#grid .block")
     .forEach((el) => el.classList.toggle("printbig", el.offsetHeight > 900));
@@ -4330,6 +4333,8 @@ async function printPage() {
   const restore = () => {
     S.collapsed = saved;
     S.maxed = maxed;
+    document.documentElement.classList.remove("printing");
+    window.dispatchEvent(new Event("resize"));
     window.removeEventListener("afterprint", restore);
     scheduleRender();
   };

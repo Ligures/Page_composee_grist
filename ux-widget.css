@@ -1,4 +1,4 @@
-/* UX widget grist — feuilles de style (version 0.9.0.2).
+/* UX widget grist — feuilles de style (version 0.9.0.3).
    Mise en page (grille de 6 colonnes), blocs, tableaux, fiches, cartes, panneau de configuration, impression.
    Chargée par index.html ; ne contient aucune donnée. */
 @font-face {
@@ -596,8 +596,9 @@ button {
   cursor: help;
   font-weight: 400;
 }
-/* écran étroit (téléphone) : un bloc par ligne, empilés, sans empilement « sans trous » ni blocs figés */
-@media (max-width: 760px) {
+/* écran étroit (téléphone) : un bloc par ligne, empilés, sans empilement « sans trous » ni blocs figés
+   (écran seulement : à l'impression on garde la disposition en 6 colonnes) */
+@media screen and (max-width: 760px) {
   .grid > * {
     grid-column: 1 / -1 !important;
     grid-row: auto !important;
@@ -2038,12 +2039,17 @@ th .thf.on {
   cursor: pointer;
   padding: 0 4px;
 }
+/* préparation de l'impression (printPage) : grille à la largeur d'une A4 paysage (277 mm ≈ 1040 px) */
+html.printing #grid {
+  width: 1040px;
+  max-width: none;
+}
 @media print {
   #stickyMask {
     display: none;
   }
   @page {
-    size: A4;
+    size: A4 landscape;
     margin: 12mm 10mm;
   }
   body {
@@ -2094,6 +2100,19 @@ th .thf.on {
   }
   .grid {
     gap: 8px;
+  }
+  /* « sans trous » : les hauteurs mesurées à l'écran ne valent plus sur papier → grille normale */
+  .grid.masonry {
+    grid-auto-rows: auto !important;
+    row-gap: 8px !important;
+  }
+  .grid.masonry > .block {
+    grid-row: auto !important;
+    margin-bottom: 0 !important;
+  }
+  /* graphiques : suivent la largeur du papier */
+  .block canvas {
+    max-width: 100% !important;
   }
   .block {
     break-inside: avoid;

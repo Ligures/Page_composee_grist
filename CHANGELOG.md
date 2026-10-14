@@ -16,6 +16,16 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.9.0.3] — Impression fidèle à l'écran — 2026-10-14
+
+### Modifié
+- **Impression** : la page s'imprime en **A4 paysage** et garde la disposition de l'écran (grille de 6 colonnes). Un graphique qui occupe 1/6 de l'écran occupe 1/6 de la page, au lieu d'une ligne entière.
+- Avant l'impression, la grille prend la largeur de la page pour que graphiques, cartes et tableaux soient redessinés à la bonne taille ; l'affichage normal revient ensuite.
+
+### Corrigé
+- La règle « un bloc par ligne » des petits écrans (téléphone) ne s'applique plus à l'impression.
+- Avec l'option « sans trous », les blocs ne se chevauchent plus et ne laissent plus de grands vides sur le papier.
+
 ## [0.9.0.2] — Réglages des filtres rapides regroupés — 2026-10-14
 
 ### Modifié
