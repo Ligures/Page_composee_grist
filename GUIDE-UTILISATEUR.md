@@ -77,6 +77,7 @@ Chaque vue s'affiche dans un **bloc**, avec un titre et quelques commandes :
 - **Fiche liée** : le petit lien à côté d'une valeur ouvre la fiche de l'élément référencé.
 - **Fiche seule** : les flèches ◀ ▶ (ou celles du clavier) passent d'un enregistrement à l'autre.
 - **Modifier une valeur**, si le bloc l'autorise et si vos droits le permettent : double-clic sur la cellule, saisie, puis Entrée pour valider ou Échap pour annuler.
+- **Ajouter une ligne**, si le bloc le propose : bouton **+ Ajouter une ligne** en bas du bloc. La ligne est créée (rattachée à l'élément sélectionné dans la liste liée, s'il y en a une) et la saisie de son premier champ s'ouvre.
   - Les valeurs calculées (formules) ne sont pas modifiables.
   - Une modification refusée par les droits est signalée.
 

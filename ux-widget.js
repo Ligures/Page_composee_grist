@@ -1,4 +1,4 @@
-/* UX widget grist — script (version 0.9.0.5). Développeur : Ligures. Licence MIT (voir LICENSE).
+/* UX widget grist — script (version 0.9.0.6). Développeur : Ligures. Licence MIT (voir LICENSE).
    Chargé par index.html, à la fin du corps de la page. Voir le sommaire ci-dessous. */
 "use strict";
 /* ════════════════════════════════════════════════════════════════════════════
@@ -40,7 +40,7 @@
  hideEmptyBlocks, tableMaxHeight, chartHeight, dataTable }
      Bloc (blocks[i]) : id = identifiant de la vue Grist (_grist_Views_section)
  Disposition : width (1-6), start, rows, fw (flux), newLine, height, sticky, startFold
- Tableaux/fiches : colWidths, asList, cardW, editable, showEmpty
+ Tableaux/fiches : colWidths, asList, cardW, editable, addable, showEmpty
  Liste de sélection : asSelect, selCol, selOrder, selGroup, syncId
  Carte : mapLabel, mapColor, mapRing + mapRules (contour), mapQpv, qpvDist,
          qpvUrl, mapZone (communes|epci|iris), mapCommune, zoneColor,
@@ -56,7 +56,7 @@
 /* ---------- État et constantes ---------- */
 // DEFAULTS — options d'une page neuve. KIND — libellé des types de vues Grist (parentKey).
 // SUPPORTED — types affichables. DEFAULT_WIDTH — largeur initiale (en sixièmes) d'un bloc ajouté.
-const VERSION = "0.9.0.5"; // voir CHANGELOG.md
+const VERSION = "0.9.0.6"; // voir CHANGELOG.md
 const DEFAULTS = {
   name: "Page composée",
   title: "",
@@ -668,6 +668,7 @@ async function rowsFor(secId, ctx, depth = 0) {
     let focus = null;
     const link = depth < 8 && !ctx.noLink ? await linkFor(info, ctx, depth) : null;
     if (link?.filter) rows = rows.filter(link.filter);
+    if (!ctx.noLink) (S.linkSet ??= {})[secId] = link?.set || null;
     if (link && "focus" in link) focus = link.focus;
     return { rows: sortRows(info, rows), focus };
   })().finally(() => ctx.pending.delete(secId));
@@ -722,7 +723,12 @@ async function linkFor(info, ctx, depth) {
     // filtrage : cible.col = source.col (ou = ligne source)
     const val = sCol ? srcRow[sCol] : srcRowId;
     const vset = isList(val) ? new Set(val.slice(1)) : null;
+    // valeur donnée à une ligne ajoutée dans ce bloc, pour qu'elle reste liée à la sélection
+    const tType = baseType(S.meta.cols.get(sec.linkTargetColRef));
+    const set =
+      vset || val == null || val === "" ? null : { [tCol]: tType === "RefList" || tType === "ChoiceList" ? ["L", val] : val };
     return {
+      set,
       filter: (r) => {
         const tv = r[tCol];
         if (isList(tv)) {
@@ -1584,6 +1590,11 @@ function isEditableCol(col) {
 }
 // blockEditable — Vrai si le bloc autorise l'édition et que l'utilisateur n'est pas en lecture seule.
 const blockEditable = (secId) => S.canEdit && !!S.cfg.blocks.find((x) => x.id === secId)?.editable;
+// blockAddable — Vrai si le bloc (tableau ou fiches) propose « + Ajouter une ligne » : édition active et option cochée.
+const blockAddable = (b, info) =>
+  S.canEdit && !!b?.editable && !!b?.addable && ["record", "detail"].includes(info?.kind);
+// addBtn — Bouton d'ajout d'une ligne en bas du bloc.
+const addBtn = (b) => `<button class="addrow" data-addrow="${b.id}" title="Ajouter un enregistrement dans la table">+ Ajouter une ligne</button>`;
 // edAttr — Attributs HTML qui rendent une cellule éditable (double-clic).
 const edAttr = (on, f, row) =>
   on && isEditableCol(f.col)
@@ -3736,13 +3747,14 @@ async function render() {
           }
           // bloc masqué s'il n'a aucune donnée ; il reste affiché seulement si c'est le filtre rapide qui l'a vidé
           // (pour pouvoir revenir à « Tous »)
-          if (S.cfg.hideEmptyBlocks && !(before && (qfCur(b) || qfCur(b, 2)))) {
+          if (S.cfg.hideEmptyBlocks && !(before && (qfCur(b) || qfCur(b, 2))) && !blockAddable(b, info)) {
             skipped.empty.push(info.title);
             continue;
           }
           const el = blockShell(b, info, KIND[info.kind], qfCtl); // le filtre reste affiché pour revenir à « Tous »
           el.classList.add("empty");
           el.querySelector(".bb").textContent = "Aucune donnée";
+          if (blockAddable(b, info)) el.querySelector(".bb").insertAdjacentHTML("beforeend", addBtn(b));
           frag.append(el);
           continue;
         }
@@ -3769,6 +3781,7 @@ async function render() {
         else if (info.kind === "custom" && isMapSection(info.sec))
           await renderMap(info, rows, body, jobs, selId, b);
         else if (info.kind === "custom") await renderAdvChart(info, rows, body, jobs);
+        if (blockAddable(b, info)) body.insertAdjacentHTML("beforeend", addBtn(b));
         frag.append(el);
         shown++;
         const ms = Math.round(performance.now() - tb);
@@ -4115,6 +4128,51 @@ $("#grid").addEventListener("pointerdown", (ev) => {
   move(ev);
 });
 
+// addRow — Ajoute un enregistrement dans la table du bloc (AddRecord), lié à la sélection en cours
+// (liaison Grist), puis le sélectionne et ouvre la saisie de son premier champ modifiable.
+async function addRow(secId, btn) {
+  const b = S.cfg.blocks.find((x) => x.id === secId),
+    info = getInfo(secId);
+  if (!blockAddable(b, info)) return;
+  btn.disabled = true;
+  try {
+    const res = await grist.docApi.applyUserActions([["AddRecord", info.tableId, null, { ...(S.linkSet?.[secId] || {}) }]]);
+    const rid = res?.retValues?.[0];
+    const ref = info.sec.tableRef;
+    for (const [id, t] of S.meta.tables)
+      if (id === ref || t.summarySourceTable === ref) {
+        delete S.cache[t.tableId];
+        delete S.byId[t.tableId];
+      }
+    if (rid) S.sel[secId] = rid;
+    S.search[secId] = ""; // la nouvelle ligne (vide) ne serait pas trouvée par la recherche
+    status("Ligne ajoutée");
+    scheduleRender();
+    // après l'affichage : on se place sur la nouvelle ligne et on ouvre la saisie du premier champ
+    for (let i = 0; rid && i < 30; i++) {
+      await new Promise((r) => setTimeout(r, 100));
+      const c = document.querySelector(`#grid .block[data-sec="${secId}"] [data-rid="${rid}"][data-ed]`);
+      if (c) {
+        c.scrollIntoView({ block: "nearest" });
+        startEdit(c);
+        break;
+      }
+    }
+  } catch (e) {
+    const msg = String(e?.message || e);
+    status(
+      /access|acc[eè]s|permission|denied|blocked/i.test(msg)
+        ? "Ajout refusé par les règles d'accès"
+        : `Ajout impossible : ${msg}`,
+      true,
+    );
+    btn.disabled = false;
+  }
+}
+$("#grid").addEventListener("click", (ev) => {
+  const a = ev.target.closest("[data-addrow]");
+  if (a) addRow(Number(a.dataset.addrow), a);
+});
 $("#grid").addEventListener("dblclick", (ev) => {
   const c = ev.target.closest("td[data-ed]");
   if (c) {
@@ -4895,6 +4953,7 @@ ${
     "Hauteur maximale du bloc (tableaux, graphiques, cartes). Au-delà, le contenu défile dans le bloc.",
   )}
   ${isFiche ? C(`data-edit="${i}"`, b.editable, "Édition des champs", "Permet de modifier les valeurs directement dans la page (double-clic). Les règles d'accès de Grist s'appliquent : une modification interdite est refusée ; les lecteurs restent en lecture seule.") : ""}
+  ${["record", "detail"].includes(s.parentKey) ? C(`data-addr="${i}"`, b.addable, "Ajout de lignes", "Avec « Édition des champs », affiche un bouton « + Ajouter une ligne » en bas du bloc. Si le bloc est lié à une sélection, la nouvelle ligne y est rattachée. Les règles d'accès de Grist s'appliquent (droit de création).") : ""}
   ${["single", "detail"].includes(s.parentKey) ? C(`data-sempty="${i}"`, b.showEmpty, "Afficher les champs vides", "Pour ce bloc seulement, montre aussi les champs sans valeur (sinon masqués selon l'option générale).") : ""}
   ${C(`data-stk="${i}"`, b.sticky, "Figer à l'écran", "Le bloc reste visible pendant que l'on fait défiler un bloc voisin plus long.")}
   ${L(
@@ -5356,6 +5415,10 @@ $("#panel").addEventListener("change", (ev) => {
   }
   if (t.dataset.edit) {
     draft.blocks[Number(t.dataset.edit)].editable = t.checked;
+    return;
+  }
+  if (t.dataset.addr) {
+    draft.blocks[Number(t.dataset.addr)].addable = t.checked;
     return;
   }
   if (t.dataset.stk) {

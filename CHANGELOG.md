@@ -16,6 +16,15 @@ Les versions antérieures à 0.5.0 ont été développées avant la mise en dép
 
 ---
 
+## [0.9.0.6] — Ajout de lignes dans un tableau modifiable — 2026-10-17
+
+### Ajouté
+- **Ajout de lignes** (option de bloc, tableaux et listes de fiches, avec « Édition des champs ») : un bouton **+ Ajouter une ligne** en bas du bloc crée un enregistrement dans la table.
+  - Si le bloc est lié à une sélection (liaison Grist), la nouvelle ligne y est rattachée : par exemple, une classe ajoutée sous l'école sélectionnée.
+  - La nouvelle ligne est sélectionnée et la saisie de son premier champ modifiable s'ouvre.
+  - Un bloc vide qui propose l'ajout reste affiché, même avec l'option « masquer les blocs vides ».
+  - Les règles d'accès de Grist s'appliquent : un ajout interdit est refusé avec un message. Le bouton n'est pas imprimé.
+
 ## [0.9.0.5] — Impression des tableaux longs, 2ᵉ correction — 2026-10-14
 
 ### Corrigé

@@ -1,4 +1,4 @@
-/* UX widget grist — feuilles de style (version 0.9.0.5).
+/* UX widget grist — feuilles de style (version 0.9.0.6).
    Mise en page (grille de 6 colonnes), blocs, tableaux, fiches, cartes, panneau de configuration, impression.
    Chargée par index.html ; ne contient aucune donnée. */
 @font-face {
@@ -1169,6 +1169,27 @@ td.num {
 
 /* Pastilles */
 /* Lien vers la fiche d'un enregistrement référencé (comme le maillon de Grist) */
+/* bouton « + Ajouter une ligne » en bas d'un tableau ou d'une liste de fiches modifiable */
+.addrow {
+  display: block;
+  flex: none;
+  margin: 4px 0 2px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--bleu);
+  background: transparent;
+  border: 1px dashed var(--bleu);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.addrow:hover {
+  background: var(--bleu-hover);
+}
+.addrow:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
 .rlink {
   display: inline-flex;
   vertical-align: -1px;
@@ -2097,6 +2118,9 @@ html.printing #grid {
   /* filtre rapide actif : rappelé en texte à la place des boutons */
   .bh .qf-print {
     display: inline !important;
+  }
+  .addrow {
+    display: none !important;
   }
   /* Sur papier, la grille CSS se coupe mal d'une page à l'autre (pages blanches, morceaux de
      tableaux isolés). On passe en flux normal : les blocs courts se rangent côte à côte avec leur
